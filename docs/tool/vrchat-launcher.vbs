@@ -14,12 +14,6 @@
 ' Configure:
 
 '----------
-' VRChat installation folder if you changed from default.
-vrchatInstallFolder = "C:\Program Files\Steam (x86)\steamapps\common\VRChat"
-' example: I set steam library folder as "D:\SteamLibrary" , then
-' vrchatInstallFolder = "D:\SteamLibrary\steamapps\common\VRChat"
-
-'----------
 ' Confirm mode
 '  true: shows confirm step before starting VRChat when used from VRChat SDK
 confirmMode = false
@@ -43,9 +37,16 @@ worldsInfo = Array( _
 '========================================
 ' program: 
 
+Set objShell = CreateObject("WScript.Shell")
+
+Function GetInstallPath()
+  GetInstallPath = objShell.RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 438100\InstallLocation")
+  ' WScript.Echo "GetInstallPath='", GetInstallPath, "'"
+End Function
+
+
 Function StartVRChat(vrmode, args)
-  Set objShell = CreateObject("WScript.Shell")
-  objShell.CurrentDirectory = vrchatInstallFolder
+  objShell.CurrentDirectory = GetInstallPath
 
   cmdline = "VRChat.exe"
   If Not vrmode Then
@@ -83,8 +84,6 @@ Function BooleanToStr(a)
 End Function
 
 
-
-Set objShell = CreateObject("WScript.Shell")
 
 If WScript.Arguments.Count = 0 Then
   If IsRunningWithWScript() Then
