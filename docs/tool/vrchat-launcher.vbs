@@ -35,7 +35,7 @@ worldsInfo = Array( _
 
 
 '========================================
-' program: 
+' program:
 
 Set objShell = CreateObject("WScript.Shell")
 
@@ -53,7 +53,7 @@ Function StartVRChat(vrmode, args)
     cmdline = cmdline & " --no-vr"
   End If
   cmdline = cmdline & " " & args
-  
+
   ' WScript.Echo "cmdline=", cmdline
   Set objExec = objShell.Exec(cmdline)
 End Function
@@ -68,7 +68,7 @@ End Function
 
 
 Function IsRunningWithWScript()
-  Set reg = new regexp 
+  Set reg = new regexp
   reg.Pattern = "wscript\.exe$"
   reg.IgnoreCase = true
   IsRunningWithWScript = reg.Test(WScript.FullName)
@@ -107,8 +107,8 @@ If WScript.Arguments.Count = 0 Then
     Loop
     WScript.Echo "Operation:"
     WScript.Echo "  0 ) toggle VR Mode"
-    
-    Set regNum = new regexp 
+
+    Set regNum = new regexp
     regNum.Pattern = "^0|[1-9][0-9]*$"
 
     Do While true
@@ -132,7 +132,7 @@ If WScript.Arguments.Count = 0 Then
         ' invalid input
       End If
     Loop
-    
+
   End If
 
 Else
@@ -151,7 +151,7 @@ Else
       WScript.Echo "  1 ) start"
 
       '---------- copy&paste base :( see also above
-      Set regNum = new regexp 
+      Set regNum = new regexp
       regNum.Pattern = "^0|[1-9][0-9]*$"
 
       Do While true
@@ -173,7 +173,7 @@ Else
         End If
       Loop
       '----------
-      
+
     End If
   Else
     StartVRChat startWithVR, RecombineArtuments()
