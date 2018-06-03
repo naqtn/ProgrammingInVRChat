@@ -41,6 +41,8 @@ Set objShell = CreateObject("WScript.Shell")
 
 Function GetInstallPath()
   GetInstallPath = objShell.RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 438100\InstallLocation")
+  ' default value fallback
+  GetInstallPath = "C:\Program Files (x86)\Steam\steamapps\common\VRChat"
   ' WScript.Echo "GetInstallPath='", GetInstallPath, "'"
 End Function
 

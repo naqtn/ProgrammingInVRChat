@@ -33,8 +33,9 @@ sysinfo.txt
 *.apk
 *.unitypackage
 
-
+# VRChat
 /Assets/VRCSDK/
 /Assets/VRCSDK.meta
-/Assets/Standard Assets/
-/Assets/Standard Assets.meta
+
+/Assets/Plugins/
+/Assets/Plugins.meta
