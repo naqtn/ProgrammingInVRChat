@@ -1,0 +1,83 @@
+# Features
+
+## Implemented
+
+### Local player
+
+- WASD move
+- mouse to view direction control
+- mouse click to Interact to a object
+
+### Trigger-action system
+
+- Custom trigger
+    - from Unity Animation event
+    - ActivateCustomTrigger action
+- Rondomized selection of actions with specified probabilitiy
+- Almost all actions (in basic use)
+    - Animation actions (AnimationInt etc.)
+    - Physics actions (AddVelocity etc.)
+    - Unity component dependent actions
+        - PlayAnimation
+        - SetParticlePlaying
+        - AudioTrigger
+        - SetUIText
+    - VRC component dependent actions
+        - SendRPC
+        - (RIP WebPanel)
+    - Resource access actions
+        - SetMaterial
+        - Spawn
+    
+
+## Not implemented
+
+- Network related
+    - Multi user
+    - Trigger system broadcast type
+    - Voice chat features
+- VRC components other than VRC_Trigger
+    - (Some will work without tewaks. VRC_AudioBank seems working via RPC)
+- Avatar related features
+- Limitation by VRChat client
+    - Audio mixer
+    - Light (? not investigate yet.)
+        - (Some people say lighting is something different between in-Unity-editor and in-VRChat-client.)
+
+
+### Local player
+
+- use world descriptor setting
+    - player spawn position
+    - respawn height
+    - jump power
+    - Reference camera
+- Pickup operation
+    - pickup, drop
+    - use down
+- Draw outline shape for interactable and pickupable objects
+- Interact raycast length
+- player object collider
+- player object layer
+
+
+### Trigger-action system
+
+- Many other triggers
+    - Life cycle (spawn, enable disable, destroy)
+    - Timer
+    - Pickup
+    - Key
+    - Collision
+    - VRC component dependent trigger (OnVideoStart etc.)
+- Delay before action
+- Extra (minor) featurs of action
+    - TeleportPlayer AlignRoomToDestination switch
+    - SendRPC (extra featurs. player ID feature etc.)
+    - SetMaterial, SpawnObject asset accessing bug reproduce and report
+- VRC component dependent actions
+    - Combat system
+
+---
+end
+
