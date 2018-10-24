@@ -1,0 +1,32 @@
+# iwsd Common prefabs
+
+Programming in VRChat / Prefabs
+
+A collection of useful common parts for VRChat world creation.
+
+ja:
+ワールド作成に便利な一般的な部品集
+
+Twitter @naqtn / publish ver 27
+
+
+
+- Still only few parts.
+- I'm planning to gather reusable parts in here from my other world creation.
+- TBD make demonstrations
+
+- まだ少しの部品しかありません
+- 他のワールドを作っていて共通部品になりそうなものを、集めようと思っています。
+
+
+
+# Upload note
+
+World Name:
+iwsd Common prefabs
+
+Description:
+Common prefabs demonstrations and examples.
+Useful common parts for VRChat world creation.
+keywords: sample example MasterLocal
+

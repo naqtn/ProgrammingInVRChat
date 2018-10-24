@@ -1,0 +1,14 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_Name: GatedInvocation_uGUI_OnSubmit_OnValueChanged
+  m_Controller: {fileID: 9100000, guid: 75230fc178de2a4428073b88e9fc3473, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: d08afea871ffe274f8749b72b8a9fe2c, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 049e4d2f66b7133449349a7ae95a45a0, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: f19b0ce33904dd3418238bdb4f25aa78, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: d8c10a878bea31740b99730fea88a4bc, type: 2}

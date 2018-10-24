@@ -1,0 +1,113 @@
+# iwsdToggleSwitchWithLamp_LocalOverride
+
+A toggle switch prefab with local overriding clamp function
+ローカル上書き固定機能付きトグルスイッチ
+
+## Features
+* Players share switch state (on/off). Its transiton is controled by master player client to avoid de-sync.
+* With local overriding clamp function, you can select independently of other player selection
+* Cares late joiner (Using MasterBufferOne broadcast type to minimize buffer size)
+* Adding to UI interface, custom trigger interface is also available.
+  (If yout want, without UI interface, you can use this for sharing state among players.)
+* Adding to toggle operation, explicit On/Off operations are also available both UI and custom triggers. 
+* Implemented with VRC_Trigger. (doesn't use VRC_ObjectSync or Animation)
+
+## 特徴
+* プレイヤー間で選択が共有される。この遷移はマスターで集約しているので同期ずれが起きない
+* 他プレイヤーによる操作の影響を受けないローカルに状態を上書き固定する機能を持つ
+* レイト・ジョイナーに対応（バッファは MasterBufferOne にしており過剰な消費はしない）
+* 通常のインタラクト操作に加えて custom trigger での操作が可能
+  （操作UIは使わずに、On/Off の二状態をマルチプレイヤー同期させる機構として活用可能）
+* 明示的な On/Off 指定も可能（UI, custom trigger ともに）
+* VRC_Trigger によってのみ実装されている（VRC_ObjectSync や アニメーションを伴わない）
+
+
+## デモ
+アニメーションを制御する例。回転アニメーションがON状態。
+
+
+## 標準操作 UI
+
+* 黒 or 黄：トグル （Interact操作UIと状態表示インジケータを兼ねる）
+* クリーム：On 状態にする
+* グレー：Off 状態にする
+* 緑 or 青：ローカル上書きモードの出入り（Interact操作UIと状態表示インジケータを兼ねる）
+* ローカル上書きを行う操作 UI は、このモード時のみ表示される。
+* ローカル上書きモードでは共有設定の操作 UI は表示されない。逆も同様。
+* ローカル上書きモードではトグル操作は出来ない（On/Offどちらかに上書き固定するものになっている）
+
+
+## プレハブ使用方法・カスタマイズ方法
+* Callbacks オブジェクトの OnActivate, OnInactivate の各 custom trigger に On, Off 状態への遷移で行いたい処理を記述する。
+    * この custom trigger の内容は、同じ状態への遷移が呼ばれてもよいように実装すること
+        * OnActivate の後に OnInactivate を挟まずに OnActivate が呼ばれうる、ということ。逆も同様。
+         * ローカル上書き状態解除時に起こりうる
+    *  この custom trigger は late joiner の join 時にも（late joiner 環境で local に）実行されることに注意すること
+        * 例えばその場合には one shot サウンドを鳴らすのは不適当。
+          OnNetworkReady によってサウンド再生機構を有効化するようにしておき、join 時での呼び出しては空振りさせる、といったように制御する。
+          <!-- TODO この回避方法正しいよね？ -->
+* 不要なボタンはオブジェクトを削除してよい
+    <!-- TODO 一部 UI オブジェクトの削除について要テスト。エラーログにはならない？ -->
+* トグルボタンのキューブはインジケータと操作ボタンは別オブジェクトになっている。
+    * 初期状態では Indicator と ToggleSwitch を重ねて配置している
+    * （On/Off 操作の方を生かして）このキューブでのトグル操作が不要な場合、ToggleSwitch を削除する。
+* インジケータの見た目を変えたい場合は、UI オブジェクトの LetActiveState, LetInactiveState を変更する
+* 共有される状態をマスターのみ可能にしたい場合は、UI 中 ToggleSwitch, SetOnSwitch, SetOffSwitch の VRC_Trigger OnInteract の broadcast type を MasterUnbuffered にする
+    <!-- TODO 動作確認。サンプルを作成  -->
+* ローカル上書き操作が不要な場合には LocalBeginLocalOverrideSwitch を無効化する
+
+
+## Custom trigger 仕様
+* 外部から呼び出してよい custom trigger は、プレハブのもっとも外側オブジェクトに定義している。仕様は以下。
+* LocalDesync : 同期追従動作を停止する。状態はその時点での共有されている状態。
+* LocalSetOn  : ON 状態にローカルで上書きする。同期追従動作は停止される（まだ停止していなかった場合）。
+* LocalSetOff : OFF 状態に上書きする。（その他 LocalSetOn と同様）
+* LocalResync : 同期を再開する。その時点で共有されている状態になる。
+* SetOn  : ON 状態にする
+* SetOff : OFF 状態にする
+* Toggle : 状態をトグルする
+* 非local操作に関してはプレハブ内部で AlwaysUnbuffered に展開するので、呼び出し側は Local のまま呼び出す事。
+    * 同一の現象に対して複数プレイヤーがトリガーを観測するタイプのトリガーを利用する場合は、
+      呼び出し側で MasterUnbuffered などの broadcast type を通してワールドインスタンス全体で一つの呼び出しになるように絞る事。
+
+
+## その他仕様
+* ローカル上書き状態において同期情報は受信・保持している
+    * マスターであってもローカル上書きは可能。
+        * マスターとしての配信は行うが自身の環境としては上書きになっている
+    * マスターの交代があった場合、自身は参照していない共有値が引き続き配信に用いられる
+* ローカル上書き値は内部的には保持していない
+    * このためローカル上書きに出入りした時に以前の設定は復元されない。
+    * （直前の同期値がローカル上書き状態の初期値となる）
+    * （Indicator に表示はしているが最後に何に切り替えたかを保持していない）
+* 初期状態は Off から開始する
+<!--
+* TODO On から開始したい場合は...
+    * 方法を検討。
+    * Internal オブジェクトの VRC_Trigger に配布状態では使わないトリガーで書いておき、OnEnable に書き換えてもらう？
+* TODO callback の初期状態での呼び出しをしたい場合を検討。
+    * 必要ある？あったら便利？
+-->
+
+
+## 参考：動作原理・内部仕様
+* VRC_Trigger コンポーネントの enable 状態によって、 custom trigger が実行されたりされないことを利用している。
+* バッファはこの VRC_Trigger コンポーネントの SetComponentActive を記録する
+    * （バッファは実際にはこれに加えて、UI の状態復元、プレハブ利用側の状態復元、をともなう）
+* Broadcast type 設計
+    * 同期系に関しては外部インタフェースのところで AlwaysUnbuffered で配り、
+      MasterUnbuffered で Master で受け取り、記録が必要な最下層で MasterBufferOne にしている。
+    * ローカル上書き系に関しては当然すべて Local で通すようにしている
+* 逆側の状態への SetComponentActive は Delay を伴う custom trigger にすると実行が延滞されることを利用している
+    * これが無いと逆状態へ切り替え処理をしたのちに逆側の評価をしてそれが実行されてしまう
+    * （これがあるために概念的には On 側と Off 側をパラレルに実行しているように理解できる）
+    * なお、ディレイの値 0.000184 には１フレームより小さい正の値、という以上の意味は無い。
+* 操作UIはほぼ直接的に公開 Custom trigger を呼び出すようにしている。
+    * 入り口を一本化することで不要な複雑さを持たないようにした。
+    * UI から UI 構成を書き換える部分は例外（UI表示部分で内部的に閉じるので）
+
+
+## License, Acknowledgments
+Copyright naqtn. MIT license.
+
+Many thx to iwashi farm workers.
