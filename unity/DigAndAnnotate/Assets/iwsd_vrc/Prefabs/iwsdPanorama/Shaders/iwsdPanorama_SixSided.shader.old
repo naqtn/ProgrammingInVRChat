@@ -1,0 +1,154 @@
+// 
+// 
+// 
+
+Shader "VRChat/PriVRC/6SidedSkybox" {
+    
+    Properties {
+        _FrontTex ("Front Texture", 2D) = "white" {}
+        _BackTex  ("Back Texture", 2D) = "white" {}
+        _LeftTex  ("Left Texture", 2D) = "white" {}
+        _RightTex ("Right Texture", 2D) = "white" {}
+        _UpTex    ("Up Texture", 2D) = "white" {}
+        _DownTex  ("Down Texture", 2D) = "white" {}
+
+        [Enum(UnityEngine.Rendering.CullMode)]
+	_Cull ("Culling face (CullMode)", Float) = 1
+
+    }
+    
+    SubShader {
+
+        Tags
+        {
+        }
+	
+        Pass {
+            Cull [_Cull]
+
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "UnityCG.cginc"
+            #pragma target 3.0 // for texture LOD sampling (tex2Dlod)
+            
+            #define M_1_2PI 0.159154943091895335769
+            #define M_1_PI  0.318309886183790671538
+            #define M_2_PI  0.636619772367581343076
+
+	    uniform sampler2D _FrontTex;
+	    uniform sampler2D _BackTex;
+	    uniform sampler2D _LeftTex;
+	    uniform sampler2D _RightTex;
+	    uniform sampler2D _UpTex;
+	    uniform sampler2D _DownTex;
+            
+
+	    fixed4 PickTex(sampler2D tex, float u, float v) {
+		return ((0 <= u) && (u <= 1.0) && (0 <= v) && (v <= 1.0))?
+                    tex2Dlod(tex, float4(u, v, 0, 0)):
+		    fixed4(0,0,0,0);
+	    }
+	    
+            fixed4 FrontTex( float3 direction ) {
+                float u0 = atan2(direction.z, direction.x);
+                float v0 = atan2(direction.y, +direction.z);
+
+		float u = (- M_2_PI * u0 + 3.0/2.0);
+		float v = (+ M_2_PI * v0 + 1.0/2.0);
+		return PickTex(_FrontTex, u, v);
+            }
+
+	    fixed4 LeftTex( float3 direction ) {
+                float u0 = atan2(direction.z, direction.x);
+                float v0 = atan2(direction.y, -direction.x);
+
+		float u = (u0 < 0)?
+		    (- M_2_PI * u0 - 3.0/2.0):
+		    (- M_2_PI * u0 + 5.0/2.0);
+		float v = (+ M_2_PI * v0 + 1.0/2.0);
+
+		return PickTex(_LeftTex, u, v);
+            }
+
+	    fixed4 RightTex( float3 direction ) {
+                float u0 = atan2(direction.z, direction.x);
+                float v0 = atan2(direction.y, +direction.x);
+
+		float u = (- M_2_PI * u0 + 1.0/2.0);
+		float v = (+ M_2_PI * v0 + 1.0/2.0);
+
+		return PickTex(_RightTex, u, v);
+            }
+
+	    fixed4 BackTex( float3 direction ) {
+                float u0 = atan2(direction.z, direction.x);
+                float v0 = atan2(direction.y, -direction.z);
+
+		float u = (- M_2_PI * u0 - 1.0/2.0);
+		float v = (+ M_2_PI * v0 + 1.0/2.0);
+
+		return PickTex(_BackTex, u, v);
+            }
+
+	    fixed4 UpTex( float3 direction ) {
+                float u0 = atan2(direction.y, direction.x);
+                float v0 = atan2(-direction.z, +direction.y);
+
+		float u = (- M_2_PI * u0 + 3.0/2.0);
+		float v = (+ M_2_PI * v0 + 1.0/2.0);
+
+		return PickTex(_UpTex, u, v);
+            }
+
+	    fixed4 DownTex( float3 direction ) {
+                float u0 = atan2(-direction.y, direction.x);
+                float v0 = atan2(+direction.z, -direction.y);
+
+		float u = (- M_2_PI * u0 + 3.0/2.0);
+		float v = (+ M_2_PI * v0 + 1.0/2.0);
+
+		return PickTex(_DownTex, u, v);
+            }
+            
+
+	    // BEGIN copy FIXME
+	    struct appdata {
+                float4 vertex : POSITION;
+            };
+            struct v2f {
+                float4 pos : SV_POSITION;
+                float4 posWorld : TEXCOORD0;
+		float4 dirModel : TEXCOORD1;
+            };
+
+
+            v2f vert(appdata v) {
+                v2f o;
+                o.pos = UnityObjectToClipPos( v.vertex );
+                o.posWorld = mul(unity_ObjectToWorld, v.vertex);
+		o.dirModel = v.vertex - float4(0,0,0,1);
+                return o;
+            }
+	    // End copy
+
+	    
+            fixed4 frag(v2f i) : SV_Target {
+                float3 origin = lerp(_WorldSpaceCameraPos, mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz, 1.0 /*_ProjectToModel*/);
+                float3 direction = lerp(i.posWorld.xyz - origin.xyz, i.dirModel.xyz, 0 /*_UseLocalDir*/ );
+		// direction = RotateY(direction, _RotateYDegree);
+                // direction = direction * lerp(float3(+1,+1,+1), float3(+1,+1,-1), _Flipped);
+
+                fixed4 col = FrontTex(direction) + BackTex(direction)
+		    + LeftTex(direction) + RightTex(direction)
+		    + UpTex(direction) + DownTex(direction);
+                
+                return col;
+            }
+
+            ENDCG
+        }
+    }
+    
+    FallBack "Diffuse"
+}

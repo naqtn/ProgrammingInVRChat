@@ -1,0 +1,281 @@
+### iwsd Panorama Prefab Demo
+A revised VRCPanorama prefab and its derivatives usecases.
+
+- VRCPanorama prefab is broken in VRCSDK-2018.08.28.13.02
+- This world demonstrates fixed and revised replacement.
+
+ja:
+- VRCSDK-2018.08.28.13.02 において VRCPanorama プレハブは壊れている
+- 修復し機能を追加したプレハブを作成した
+- このワールドではそのプレハブの機能と応用例を紹介する
+
+
+### Dev note, TODOs / 作業メモ
+
+- Some setups lack English text
+- Refine Texts
+- Need master local to change images.
+  (non-master player will see flickers)
+
+- 単に体験する人向けの記述と、
+  prefab の使い方を知りたい人向けに、記述を分離するつもり
+  （今はとりあえず下書き文章を増やすためにそのへんごっちゃ）
+- non-master で切り替え時にちらつくことがある。
+  master local を作れることが分かったので導入する
+- OnDataStorageChange はちゃんと動く。例を追加したい
+- 補足追加を入れていたら看板の番号がずれてしまった
+
+
+### Prefab development area
+
+- Base objects of the prefabs.
+- It displays test pattern image.
+- You'll see this in Unity editor when using the prefab
+- NOTE: You must inactivate this area objects
+  in Unity editor before running sample setups.
+
+ja:
+- この先は prefab 開発エリアです
+- pretab の元になっているオブジェクトが置いてあります
+- テストパターンを表示しています
+- プレハブを使うと Unity 編集画面ではこれを見ることになります
+- 注意：サンプルを実行する際にはこのエリアは
+  Unity エディタ上で inactive にしておく必要があります。
+
+
+### Basic use
+Step into the spehre . You can see panorama images without distortion
+
+- View point of the panorama is adjusted to your eye point (= avator camera).
+- With front face culling (= draw back face only) 
+- You can select from sevral image with green box.
+
+ja:
+- パノラマ画像をオブジェクトを通して見る、基本の使い方
+- 物体の中に入ると、パノラマ画像を歪みなく見ることができる
+  パノラマ画像撮影時の視点をプレイヤー（あなた）の視点の位置に合わせているため
+- 緑のキューブで画像を選択できる
+
+####
+  (The prefab provides select operation)
+- このサンプルでは３枚を前後に切り替え、また先頭に戻すことができる
+
+
+### 2. On model (back face)
+  Another mode: project image onto model mesh statically
+
+- View point of the panorama is adjusted to object origin
+  (= center of the sphere)
+- Also does front face culling (same as first example).
+
+ja:
+- メッシュに固定的に貼り付ける表現
+- パノラマ画像撮影時の視点はオブジェクトの原点に対応付けられる
+
+#### note
+- シェーダに与えているパラメタが違う
+- 異なったパラメタに設定しているマテリアルが同梱されているので
+  マテリアルを変えると表現モードを切り替えられる
+
+
+### 3. On model (front face)
+  Project to front face of the object
+
+- project image onto front face (= back face culling)
+- You can get on this sphere. It has a collider 
+- Some stereo panorama images may give diffrent impressions
+  between VR and desktop, especially in this mode.
+
+ja:
+- 手前の面に投影するようにしたもの
+- 上に登って全体を眺められるように、このサンプルではコライダーも入れている
+- 立体視できる画像では VR とデスクトップとで印象が大きく異なる場合がある。
+  このモードではその違いが大きく感じられるかもしれない。
+
+#### note
+  (Collider is not included in prfab. I added for a demonstration)
+（コライダーはプレハブには組まれない）
+
+
+### Comparison "camera center"
+  and "model center"
+
+ Thease pickable spheres demonstrate differences of centering mode.
+
+- First example in this world uses "camera center" mode.
+  It's like a window opend to panorama images.
+- Second and third one uses "model center" mode.
+  That's like a painted object with panorama images.
+
+ja:
+- カメラ・センターとモデル・センターの比較
+- 最初のサンプルはパノラマをのぞき込む窓のように見える
+- 二番目のものは、パノラマ画像が表面に書き込まれているように見える
+
+#### note
+- (Original VRC_Panorama prefab in VRChat SDK only provides
+  "camera center" and "culling back" expression.)
+- （オリジナルの VRC_Panorama はカメラ・センターで物体の表面に書く
+  表現だけを提供している。）
+
+
+### 3a. Force Mono (non-stereoscopic)
+This setup puts flat image onto the sphere.
+
+- This use identical image left and right eyes.
+- For desktop users, there's no differences than privious one.
+
+ja:
+- 球の表面に平らにイメージを貼る例（"モノラル化"）
+- 右目と左目に同じ画像を使用している
+- デスクトップユーザーには前の例と違いはない
+
+
+### VRChat SDK VRCPanorama
+for reference.
+
+- It has distortion along holizontal axis (U-axis in the shader)
+  as you can see bended train rail.
+  It squeezes 360 degrees into 180 (its half) wrongly.
+- I changed Renderer property of VRC_Panorama
+   from child Sphere to VRCPanorama itself.
+   It doesn't work completely without this modification.
+   
+- VRChat SDK に付属しているプレハブ（参考展示）
+- 水平方向に歪があり、線路が曲がって見える
+  360度を誤って半分の180度に押し込んでいる
+- Renderer 設定をプレハブのオブジェクト自身に変更している
+  この変更をしないと全く動かないため
+
+
+
+### 4. Variable mesh
+
+- Works with any mesh not only spheres
+- This one uses a cube
+
+ja:
+- 投影は Sphere だけではなく任意のメッシュに適用できる
+- これは Cube を使用した例
+
+
+
+### 5. Drawing both side of the mesh
+
+  This setup draws both faces (front and back)
+
+- And with "model center" and "force mono",
+  It makes the cube like colored plastic plate box.
+
+ja:
+- メッシュの表面と裏面の両方とも描画するモードの例
+- モデル・センターと"モノラル化"を使い、
+  着色されたプラスチックの箱のような表現を作っている
+
+
+### 6. As an image selector
+  Use VRC_Panorama component just an image selector
+
+- This setup loads images from Internet
+- VRC_Panorama has URL strings
+
+ja:
+- VRC_Panorama パノラマ画像とは関係なく、
+  URL ダウンロード付きのテクスチャ選択機構としても使える
+- これはテクスチャを Quad に表示していて、
+  そのテクスチャを VRC_Panorama で切り替える例
+
+
+
+### 7. With Large object
+  It's almost similar to skybox
+
+- This one uses 100m sphere
+ja:
+- 大きなモデルと共に使えばスカイボックスのようにも使える
+- この例では100mの大きさの sphere を使っている
+
+
+
+### iwsdLiveSkybox prefab
+Panorama skybox image selector
+
+- This prefab changes real skybox image
+  instead of using large model for skybox.
+- You can teleport to viewing platform above
+  by pressing yellow cube.
+
+- 本物のスカイボックスの描画を切り替えるプレハブ
+ （大きなモデルをスカイボックス代わりにするのではなく）
+- 上空に展望台を設けてある。黄色スイッチでテレポートする
+
+
+#### iwsdLiveSkybox prefab structure
+
+1. A Quad displays a image, VRC_Panorama chages that image.
+2. A camera captures this to a RendererTexture.
+3. Original skybox shader draws that texture to the sky.
+
+1. VRC_Panorama で切り替えたテクスチャを Quad に表示する
+2. カメラでこれを撮影して RendererTexture に書き出す
+3. このために作られたシェーダで
+   このテクスチャを Skybox として描画する
+
+####
+VR で閲覧する際、設置物が邪魔にならないよう
+- VRC_Panorama が直接に Skybox の Material に書き込めないため
+  RendererTexture を経由する
+- 同じ形式で配信する動画やビデオストリームがあれば
+  ライブでスカイボックスに適用することもできる
+- "With Large object" のサンプルが動作していると本物の Skybox は表示できない。
+  このサンプルの切り替えボタンはそれを停止させるようにもしてある
+
+
+### Shader Y Rotation demo
+
+- This demo animates "rotate Y" parameter of the shader
+  that iwsdVRCPanorama prefab use.
+- This is a sample for separated use of this shader.
+  This setup doesn't use VRC_Panorama component.
+
+- iwsdVRCPanorama プレハブのシェーダーの
+  "rotate Y" パラメタをアニメータで変化させたデモ
+- シェーダを単体で使うサンプルでもある。
+  この例は VRC_Panorama コンポーネントは使用していない
+  
+
+### Six Sided Camera system
+
+A Realtime panorama camera system.
+
+- Red cube has six cameras that capture panorama images.
+- You can get inside of thease display objects. (It's fun!)
+- (This is not related to VRCPanorama prefab directly.
+   It uses same functionality of a shader I made.)
+
+- リアルタイム・パノラマ・カメラ・システム
+- 赤いキューブには６つのカメラが仕込まれていて、
+  全球パノラマを撮影している
+- 表示オブジェクトは内部に入れるようにしてある
+- （これは直接には VRCPanorama プレハブとは関係がない。
+  作成したシェーダーの機能を応用した別のセット）
+
+
+
+----
+- Some effects are implemented in newly created shaders.
+- 表現効果のいくつかは新たに作成したシェーダで実現されている
+
+
+最初のは一般的な画像を平面に
+次のは正距円筒図法パノラマ画像を自作シェーダで球に
+正距円筒図法パノラマ画像をシェーダで球に投影した例
+（このボードの裏面に元の画像が掲載してあります）
+
+- Standard shader draw image along with model UV
+
+- StandardシェーダでモデルのUVに従って画像を表示している
+
+The shader 
+
+。すべて、組み込みテクスチャ、URL指定でダウンロードのどちらでも動きます。プレハブ配布予定
