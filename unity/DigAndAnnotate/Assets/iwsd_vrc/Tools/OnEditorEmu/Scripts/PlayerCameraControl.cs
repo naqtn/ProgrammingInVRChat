@@ -165,7 +165,7 @@ namespace Iwsd
                         // MEMO when use UI screen && !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()
                         )
                     {
-                        triggerComp.OnInteract();
+                        triggerComp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnInteract);
                     }
                 }
             }

@@ -50,7 +50,7 @@ namespace Iwsd
         ////////////////////////////////////////
         // VRCSDK2.VRC_Trigger+TriggerType
 
-        // Custom,
+        // Custom,  // from program (Animation, uGUI)
         void ExecuteCustomTrigger(string name)
         {
             Iwlog.Trace("Emu_Trigger:ExecuteCustomTrigger name='" + name + "'");
@@ -64,23 +64,34 @@ namespace Iwsd
         // OnNetworkReady,
         // OnPlayerJoined,
         // OnPlayerLeft,
-        // OnPickupUseDown,
-        // OnPickupUseUp,
+        // x OnPickupUseDown, // from Player
+        // x OnPickupUseUp, // from Player
         // OnTimer,
-        // OnEnterTrigger,
-        // OnExitTrigger,
+        // OnEnterTrigger, // Collider.OnTriggerEnter
+        void OnTriggerEnter(Collider other)
+        {
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnEnterTrigger);
+        }
+        // OnExitTrigger, // Collider.OnTriggerExit
+        void OnTriggerExit(Collider other)
+        {
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnEnterTrigger);
+        }
         // OnKeyDown,
         // OnKeyUp,
-        // OnPickup,
-        // OnDrop,
-        // OnInteract,
-        public void OnInteract()
+        // x OnPickup, // from Player
+        // x OnDrop, // from Player
+        // x OnInteract, // from Player
+        // OnEnterCollider, // Collider.OnCollisionEnter
+        void OnCollisionEnter(Collision collision)
         {
-            Iwlog.Trace(gameObject, "Emu_Trigger:OnInteract");
-            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnInteract);
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnEnterCollider);
         }
-        // OnEnterCollider,
-        // OnExitCollider,
+        // OnExitCollider, // Collider.OnCollisionExit
+        void OnCollisionExit(Collision collision)
+        {
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnExitCollider);
+        }
         // OnDataStorageChange,
         // OnDataStorageRemove, // hidden
         // OnDataStorageAdd, // hidden
@@ -93,7 +104,11 @@ namespace Iwsd
         // OnVideoPause,
         // OnDisable,
         // OnOwnershipTransfer,
-        // OnParticleCollision,
+        // OnParticleCollision, // MonoBehaviour.OnParticleCollision
+        void OnParticleCollision(GameObject other)
+        {
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnParticleCollision);
+        }
 
         ////////////////////////////////////////////////////////////
         // internal interface
@@ -109,6 +124,8 @@ namespace Iwsd
 
         internal void ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name = null)
         {
+            Iwlog.Trace(gameObject, "Emu_Trigger:ExecuteTriggers type=" + triggerType);
+
             var triggers = SearchTrigger(triggerType, name);
             foreach (var triggerDef in triggers) {
                 ExecuteTriggerActions(triggerDef);
