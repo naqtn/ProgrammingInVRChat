@@ -42,41 +42,54 @@ public class IwsdSpikeWindow2 : EditorWindow
 
     bool tested = false;
     string result = "<not eval yet>";
+    string examTypeName = "";
+    string examTypeResult = "";
+
+    static Type foo = typeof(VRCSDK2.VRC_EventHandler.VrcEvent);
+    
     void OnGUI ()
     {
 	EditorGUILayout.LabelField("IwsdSpikeWindow2");
 
-	EditorGUILayout.LabelField("aaaa:");
-        if (!tested) {
-
-            // result = ExamEnum(typeof(VRCSDK2.VRC_EventHandler.VrcBooleanOp));
-            // result = ExamType(typeof(VRCSDK2.VRC_EventHandler.VrcEvent));
-            // result = ExamType(typeof(Array));
-            // result = BinaryFormatterTest();
-
-            result = ExamType(typeof(VRCSDK2.VRC_SceneDescriptor));
-
-            tested = true;
+        
+	var s = EditorGUILayout.TextField(examTypeName);
+        if (s != examTypeName)
+        {
+            examTypeName = s;
+            try
+            {
+                // Type.AssemblyQualifiedName
+                // VRCSDK2.VRC_EventHandler+VrcEvent, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45
+                
+                examTypeResult = ExamType(Type.GetType(s));
+            }
+            catch (Exception e)
+            {
+                examTypeResult = "s='" + s + "', Message='" + e.Message + "'";
+            }
         }
-        EditorGUILayout.TextArea(result);
-	EditorGUILayout.LabelField("bbb:");
+        EditorGUILayout.TextArea(examTypeResult);
+            
+	// EditorGUILayout.LabelField("aaaa:");
+        // if (!tested) {
+        //     // result = ExamEnum(typeof(VRCSDK2.VRC_EventHandler.VrcBooleanOp));
+        //     // result = ExamType(typeof(VRCSDK2.VRC_EventHandler.VrcEvent));
+        //     // result = ExamType(typeof(Array));
+        //     // result = BinaryFormatterTest();
+        //     result = ExamType(typeof(VRCSDK2.VRC_Pickup));
+        //     tested = true;
+        // }
+        // EditorGUILayout.TextArea(result);
+	// EditorGUILayout.LabelField("bbb:");
     }
     
-    static string ExamEnum(Type type)
-    {
-        string[] strs = Enum.GetNames(type);
-
-        string result = "{\n";
-        foreach (var s in strs) {
-            result += s + ",\n";
-        }
-        result += "}\n";
-
-        return result;
-    }
-
     static string ExamType(Type type)
     {
+        if (type == null)
+        {
+            return "type is null";
+        }
+        
         var buf = new System.Text.StringBuilder();
         buf.Append("Name:" + type.Name + "\n");
         buf.Append("FullName:" + type.FullName + "\n");
@@ -103,9 +116,29 @@ public class IwsdSpikeWindow2 : EditorWindow
             }
         }
         buf.Append("}\n");
-    
+
+
+        if (type.IsEnum)
+        {
+            buf.Append(ExamEnum(type));
+        }
+        
         return buf.ToString();
     }
+
+    static string ExamEnum(Type type)
+    {
+        string[] strs = Enum.GetNames(type);
+
+        string result = "Enum {\n";
+        foreach (var s in strs) {
+            result += s + ",\n";
+        }
+        result += "}\n";
+
+        return result;
+    }
+
 
     static void ExamCustomAttributes(MemberInfo info, System.Text.StringBuilder buf)
     {

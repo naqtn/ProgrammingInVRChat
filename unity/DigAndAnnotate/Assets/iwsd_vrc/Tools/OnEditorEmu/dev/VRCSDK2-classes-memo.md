@@ -442,3 +442,113 @@ Members {
  NestedType Name=SpawnOrientation
  NestedType Name=SpawnOrder
 }
+
+
+------------------------------
+
+Name:VRC_Pickup
+FullName:VRCSDK2.VRC_Pickup
+Public Fields {
+ public System.Boolean DisallowTheft;
+ public UnityEngine.Rigidbody physicalRoot;
+ public UnityEngine.Transform ExactGun;
+ public UnityEngine.Transform ExactGrip;
+ public System.Boolean allowManipulationWhenEquipped;
+ public VRCSDK2.VRC_Pickup+PickupOrientation orientation;
+ public VRCSDK2.VRC_Pickup+AutoHoldMode AutoHold;
+ public System.String UseText;
+[UnityEngine.HideInInspector][System.ObsoleteAttribute] public VRCSDK2.VRC_EventHandler+VrcBroadcastType useEventBroadcastType;
+[UnityEngine.HideInInspector][System.ObsoleteAttribute] public System.String UseDownEventName;
+[System.ObsoleteAttribute][UnityEngine.HideInInspector] public System.String UseUpEventName;
+[System.ObsoleteAttribute][UnityEngine.HideInInspector] public VRCSDK2.VRC_EventHandler+VrcBroadcastType pickupDropEventBroadcastType;
+[UnityEngine.HideInInspector][System.ObsoleteAttribute] public System.String PickupEventName;
+[System.ObsoleteAttribute][UnityEngine.HideInInspector] public System.String DropEventName;
+ public System.Single ThrowVelocityBoostMinSpeed;
+ public System.Single ThrowVelocityBoostScale;
+[UnityEngine.HideInInspector] public UnityEngine.Component currentlyHeldBy;
+[UnityEngine.HideInInspector] public VRCSDK2.VRC_PlayerApi currentLocalPlayer;
+ public System.Boolean pickupable;
+[UnityEngine.RangeAttribute] public System.Single proximity;
+ public VRCSDK2.VRC_Pickup+AwakeDelegate OnAwake;
+ public VRCSDK2.VRC_Pickup+ForceDropDelegate ForceDrop;
+ public VRCSDK2.VRC_Pickup+OnDestroyedDelegate OnDestroyed;
+ public VRCSDK2.VRC_Pickup+HapticEventDelegate HapticEvent;
+[UnityEngine.HideInInspector] public System.Boolean originalKinematic;
+[UnityEngine.HideInInspector] public System.Boolean originalGravity;
+[UnityEngine.HideInInspector] public System.Boolean originalTrigger;
+[UnityEngine.HideInInspector] public UnityEngine.Transform originalParent;
+ public System.Func`2[[VRCSDK2.VRC_Pickup, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45],[VRCSDK2.VRC_Pickup+PickupHand, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45]] _GetPickupHand;
+ public System.Func`2[[VRCSDK2.VRC_Pickup, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45],[VRCSDK2.VRC_PlayerApi, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45]] _GetCurrentPlayer;
+}
+  BaseType:VRCSDK2.VRC_Pickup
+  BaseType:VRCSDK2.VRC_Behaviour
+  BaseType:UnityEngine.MonoBehaviour
+  BaseType:UnityEngine.Behaviour
+  BaseType:UnityEngine.Component
+  BaseType:UnityEngine.Object
+  BaseType:System.Object
+Members {
+ Method Name=get_NetworkID
+ Method Name=set_NetworkID
+ Method Name=get_currentPlayer
+ Method Name=get_IsHeld
+ Method Name=get_currentHand
+ Method Name=Drop
+ Method Name=Drop
+ Method Name=GenerateHapticEvent
+ Method Name=RevertPhysics
+ Method Name=PlayHaptics
+ Method Name=ProvideEvents
+ Constructor Name=.ctor
+ Property Name=NetworkID
+ Property Name=currentPlayer
+ Property Name=IsHeld
+ Property Name=currentHand
+ Field Name=DisallowTheft
+ Field Name=physicalRoot
+ Field Name=ExactGun
+ Field Name=ExactGrip
+ Field Name=allowManipulationWhenEquipped
+ Field Name=orientation
+ Field Name=AutoHold
+ Field Name=UseText
+ Field Name=useEventBroadcastType
+ Field Name=UseDownEventName
+ Field Name=UseUpEventName
+ Field Name=pickupDropEventBroadcastType
+ Field Name=PickupEventName
+ Field Name=DropEventName
+ Field Name=ThrowVelocityBoostMinSpeed
+ Field Name=ThrowVelocityBoostScale
+ Field Name=currentlyHeldBy
+ Field Name=currentLocalPlayer
+ Field Name=pickupable
+ Field Name=proximity
+ Field Name=OnAwake
+ Field Name=ForceDrop
+ Field Name=OnDestroyed
+ Field Name=HapticEvent
+ Field Name=originalKinematic
+ Field Name=originalGravity
+ Field Name=originalTrigger
+ Field Name=originalParent
+ Field Name=_GetPickupHand
+ Field Name=_GetCurrentPlayer
+ NestedType Name=HapticEventDelegate
+ NestedType Name=OnDestroyedDelegate
+ NestedType Name=ForceDropDelegate
+ NestedType Name=AwakeDelegate
+ NestedType Name=PickupHand
+ NestedType Name=AutoHoldMode
+ NestedType Name=PickupOrientation
+}
+
+
+------------
+VRCSDK2.VRC_Pickup+AutoHoldMode, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45
+Enum {
+AutoDetect,
+Yes,
+No,
+}
+  

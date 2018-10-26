@@ -34,7 +34,7 @@ namespace Iwsd
             vrcTrigger = new Val_Trigger(from);
         }
         
-        //////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
         // Public interface
         
         void OnEnable()
@@ -96,7 +96,28 @@ namespace Iwsd
         // OnParticleCollision,
 
         ////////////////////////////////////////////////////////////
+        // internal interface
 
+        internal bool HasTriggerOf(VRCSDK2.VRC_Trigger.TriggerType triggerType)
+        {
+            var triggers = SearchTrigger(triggerType);
+            return triggers.GetEnumerator().MoveNext();
+        }
+
+        // CHECK What happends if multiple VRC_Trigger compnent exists in case of original VRChat client?
+        // Simply they do them work independently?
+
+        internal void ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name = null)
+        {
+            var triggers = SearchTrigger(triggerType, name);
+            foreach (var triggerDef in triggers) {
+                ExecuteTriggerActions(triggerDef);
+            }
+        }
+
+        ////////////////////////////////////////////////////////////
+        // private implementation
+        
         private IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> SearchTrigger(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name = null)
         {
             if (this.vrcTrigger == null) {
@@ -119,17 +140,6 @@ namespace Iwsd
                     break;
             }
             return query;
-        }
-
-        // CHECK What happends if multiple VRC_Trigger compnent exists in case of original VRChat client?
-        // Simply they do them work independently?
-        
-        private void ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name = null)
-        {
-            var triggers = SearchTrigger(triggerType, name);
-            foreach (var triggerDef in triggers) {
-                ExecuteTriggerActions(triggerDef);
-            }
         }
 
         static System.Random random = new System.Random(0);

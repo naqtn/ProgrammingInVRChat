@@ -6,12 +6,15 @@ namespace Iwsd
 {
 
     public class PlayerControl : MonoBehaviour {
-    
-        public float speed = 4.0F;
-        public float jumpSpeed = 5.0F;
-        public float gravity = 20.0F;
 
-        public GameObject playerCamObj;
+        // TODO Use values from VRC_SceneDescriptor
+        private float speed = 4.0F;
+        private float jumpSpeed = 5.0F;
+        private float gravity = 20.0F;
+
+        public GameObject PlayerCamera;
+        public GameObject RightArm;
+        public GameObject RightHoldPosition;
     
         private Vector3 moveDirection = Vector3.zero;
 
@@ -25,10 +28,10 @@ namespace Iwsd
             }
 
             // TODO use VRC_SceneDescriptor.ReferenceCamera as template
-            if (playerCamObj == null) {
-                Iwlog.Error(gameObject, "playerCamObj not specified.");
+            if (PlayerCamera == null) {
+                Iwlog.Error(gameObject, "PlayerCamera not specified.");
             } else {
-                playerCamObj.SetActive(true);
+                PlayerCamera.SetActive(true);
             }
         
         }

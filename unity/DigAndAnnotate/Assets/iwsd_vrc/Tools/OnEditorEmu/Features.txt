@@ -7,6 +7,10 @@
 - WASD move
 - mouse to view direction control
 - mouse click to Interact to a object
+- Pickup operation
+    - pickup, drop
+    - use down
+
 
 ### Trigger-action system
 
@@ -28,6 +32,7 @@
     - Resource access actions
         - SetMaterial
         - Spawn
+- Pickup, UseDown, UseUp, Drop triggers
     
 
 ## Not implemented
@@ -52,9 +57,6 @@
     - respawn height
     - jump power
     - Reference camera
-- Pickup operation
-    - pickup, drop
-    - use down
 - Draw outline shape for interactable and pickupable objects
 - Interact raycast length
 - player object collider
@@ -66,7 +68,6 @@
 - Many other triggers
     - Life cycle (spawn, enable disable, destroy)
     - Timer
-    - Pickup
     - Key
     - Collision
     - VRC component dependent trigger (OnVideoStart etc.)
@@ -77,6 +78,18 @@
     - SetMaterial, SpawnObject asset accessing bug reproduce and report
 - VRC component dependent actions
     - Combat system
+- Pickup minor features
+    - change hover text
+    - AutoHold AutoDetect
+    - PickupOrientation
+
+
+## Idea
+
+- Conditional "break"
+    - Pause execution of trigger-action if some condition become true
+- Test automation
+    - Automaticall operation and asset condition
 
 ---
 end
