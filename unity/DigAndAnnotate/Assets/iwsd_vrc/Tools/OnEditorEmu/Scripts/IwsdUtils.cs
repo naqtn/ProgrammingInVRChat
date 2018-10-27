@@ -3,23 +3,38 @@ using UnityEngine;
 namespace Iwsd
 {
     
-    // TODO Add on/off switch (or compile time ifdef)
+    // TODO Add on/off switch (or compile time switch i.e. preprocesor if)
+    // #define TRACE_LOG_ON  // < Quick implementation
+
     // TODO Add params (variable count trailing string arguments)
     
     class Iwlog {
         public static void Trace2(string s)
         {
-            // UnityEngine.Debug.Log(s);
+            #if TRACE_LOG_ON
+            UnityEngine.Debug.Log(s);
+            #endif
+        }
+
+        public static void Trace2(Object context, string s)
+        {
+            #if TRACE_LOG_ON
+            UnityEngine.Debug.Log(s, context);
+            #endif
         }
 
         public static void Trace(string s)
         {
-            // UnityEngine.Debug.Log(s);
+            #if TRACE_LOG_ON
+            UnityEngine.Debug.Log(s);
+            #endif
         }
 
         public static void Trace(Object context, string s)
         {
-            // UnityEngine.Debug.Log(s, context);
+            #if TRACE_LOG_ON
+            UnityEngine.Debug.Log(s, context);
+            #endif
         }
 
         public static void Debug(string s)

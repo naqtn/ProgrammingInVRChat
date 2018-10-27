@@ -552,3 +552,61 @@ Yes,
 No,
 }
   
+------------
+VRCSDK2.VRC_Trigger+TriggerEvent, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45
+
+Name:TriggerEvent
+FullName:VRCSDK2.VRC_Trigger+TriggerEvent
+Public Fields {
+ public VRCSDK2.VRC_Trigger+TriggerType TriggerType;
+ public VRCSDK2.VRC_EventHandler+VrcBroadcastType BroadcastType;
+[UnityEngine.SerializeField] public System.Collections.Generic.List`1[[VRCSDK2.VRC_EventHandler+VrcEvent, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45]] Events;
+ public System.String Name;
+[UnityEngine.SerializeField] public System.Collections.Generic.List`1[[VRCSDK2.VRC_Trigger, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45]] Others;
+ public UnityEngine.KeyCode Key;
+ public System.Boolean TriggerIndividuals;
+ public UnityEngine.LayerMask Layers;
+ public System.Boolean Repeat;
+ public System.Single LowPeriodTime;
+ public System.Single HighPeriodTime;
+ public System.Boolean ResetOnEnable;
+ public System.Boolean EventFired;
+ public System.Single Duration;
+ public System.Single Timer;
+ public System.Int32 DataElementIdx;
+[UnityEngine.SerializeField] public System.Collections.Generic.List`1[[VRCSDK2.VRC_Trigger+DataStorageShadow, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45]] DataStorageShadowValues;
+ public System.Single AfterSeconds;
+[UnityEngine.SerializeField] public System.Boolean[] ProbabilityLock;
+[UnityEngine.SerializeField] public System.Single[] Probabilities;
+[UnityEngine.TooltipAttribute] public System.Int32 MidiChannel;
+[UnityEngine.TooltipAttribute] public System.Int32 MidiNote;
+[UnityEngine.TooltipAttribute] public System.String OscAddr;
+}
+  BaseType:VRCSDK2.VRC_Trigger+TriggerEvent
+  BaseType:System.Object
+Members {
+ Constructor Name=.ctor
+ Field Name=TriggerType
+ Field Name=BroadcastType
+ Field Name=Events
+ Field Name=Name
+ Field Name=Others
+ Field Name=Key
+ Field Name=TriggerIndividuals
+ Field Name=Layers
+ Field Name=Repeat
+ Field Name=LowPeriodTime
+ Field Name=HighPeriodTime
+ Field Name=ResetOnEnable
+ Field Name=EventFired
+ Field Name=Duration
+ Field Name=Timer
+ Field Name=DataElementIdx
+ Field Name=DataStorageShadowValues
+ Field Name=AfterSeconds
+ Field Name=ProbabilityLock
+ Field Name=Probabilities
+ Field Name=MidiChannel
+ Field Name=MidiNote
+ Field Name=OscAddr
+}

@@ -32,8 +32,14 @@ namespace Iwsd
         public void SetupFrom(VRCSDK2.VRC_Trigger from)
         {
             vrcTrigger = new Val_Trigger(from);
+
+            layerMask_OnEnterTrigger  = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnEnterTrigger);
+            layerMask_OnExitTrigger   = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnExitTrigger);
+            layerMask_OnEnterCollider = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnEnterCollider);
+            layerMask_OnExitCollider  = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnExitCollider);
         }
         
+
         ////////////////////////////////////////////////////////////
         // Public interface
         
@@ -54,7 +60,7 @@ namespace Iwsd
         void ExecuteCustomTrigger(string name)
         {
             Iwlog.Trace("Emu_Trigger:ExecuteCustomTrigger name='" + name + "'");
-            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.Custom, name);
+            ExecuteTriggers_Named(VRCSDK2.VRC_Trigger.TriggerType.Custom, name);
         }
 
         // Relay,
@@ -67,16 +73,43 @@ namespace Iwsd
         // x OnPickupUseDown, // from Player
         // x OnPickupUseUp, // from Player
         // OnTimer,
+
         // OnEnterTrigger, // Collider.OnTriggerEnter
         void OnTriggerEnter(Collider other)
         {
-            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnEnterTrigger);
+            Iwlog.Trace2(gameObject, "Emu_Trigger: OnTriggerEnter");
+
+            int layer = other.gameObject.layer;
+            LayerMask layerMask = 1 << layer;
+            if ((layerMask_OnExitTrigger & layerMask) != 0)
+            {
+                countFor_OnExitTrigger++;
+            }
+            if ((layerMask_OnEnterTrigger & layerMask) != 0)
+            {
+                ExecuteTriggers_Collision(VRCSDK2.VRC_Trigger.TriggerType.OnEnterTrigger,
+                                          layerMask,  countFor_OnEnterTrigger++);
+            }
         }
+
         // OnExitTrigger, // Collider.OnTriggerExit
         void OnTriggerExit(Collider other)
         {
-            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnEnterTrigger);
+            Iwlog.Trace2(gameObject, "Emu_Trigger: OnTriggerExit");
+
+            int layer = other.gameObject.layer;
+            int layerMask = 1 << layer;
+            if ((layerMask_OnEnterTrigger & layerMask) != 0)
+            {
+                --countFor_OnEnterTrigger;
+            }
+            if ((layerMask_OnExitTrigger & layerMask) != 0)
+            {
+                ExecuteTriggers_Collision(VRCSDK2.VRC_Trigger.TriggerType.OnExitTrigger,
+                                          layerMask,  --countFor_OnExitTrigger);
+            }
         }
+        
         // OnKeyDown,
         // OnKeyUp,
         // x OnPickup, // from Player
@@ -85,12 +118,36 @@ namespace Iwsd
         // OnEnterCollider, // Collider.OnCollisionEnter
         void OnCollisionEnter(Collision collision)
         {
-            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnEnterCollider);
+            Iwlog.Trace2(gameObject, "Emu_Trigger: OnCollisionEnter");
+
+            int layer = collision.collider.gameObject.layer;
+            int layerMask = 1 << layer;
+            if ((layerMask_OnExitCollider & layerMask) != 0)
+            {
+                countFor_OnExitCollider++;
+            }
+            if ((layerMask_OnEnterCollider & layerMask) != 0)
+            {
+                ExecuteTriggers_Collision(VRCSDK2.VRC_Trigger.TriggerType.OnEnterCollider,
+                                          layerMask,  countFor_OnEnterCollider++);
+            }
         }
         // OnExitCollider, // Collider.OnCollisionExit
         void OnCollisionExit(Collision collision)
         {
-            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnExitCollider);
+            Iwlog.Trace2(gameObject, "Emu_Trigger: OnCollisionExit");
+
+            int layer = collision.collider.gameObject.layer;
+            int layerMask = 1 << layer;
+            if ((layerMask_OnEnterCollider & layerMask) != 0)
+            {
+                --countFor_OnEnterCollider;
+            }
+            if ((layerMask_OnExitCollider & layerMask) != 0)
+            {
+                ExecuteTriggers_Collision(VRCSDK2.VRC_Trigger.TriggerType.OnExitCollider,
+                                          layerMask,  --countFor_OnExitCollider);
+            }
         }
         // OnDataStorageChange,
         // OnDataStorageRemove, // hidden
@@ -111,70 +168,161 @@ namespace Iwsd
         }
 
         ////////////////////////////////////////////////////////////
-        // internal interface
+        // Internal interface
 
         internal bool HasTriggerOf(VRCSDK2.VRC_Trigger.TriggerType triggerType)
         {
-            var triggers = SearchTrigger(triggerType);
+            var triggers = SearchTrigger_NoArg(triggerType);
             return triggers.GetEnumerator().MoveNext();
         }
 
-        // CHECK What happends if multiple VRC_Trigger compnent exists in case of original VRChat client?
-        // Simply they do them work independently?
-
-        internal void ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name = null)
+        // You have to choose appropriate method comparing with trigger type if you want to consider trigger conditions.
+        // For example, if you call this method with OnEnterTrigger, it select trigger-action definition ignoring layers condition.
+        internal void ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType triggerType)
         {
-            Iwlog.Trace(gameObject, "Emu_Trigger:ExecuteTriggers type=" + triggerType);
-
-            var triggers = SearchTrigger(triggerType, name);
-            foreach (var triggerDef in triggers) {
-                ExecuteTriggerActions(triggerDef);
-            }
+            ExecuteTriggers(SearchTrigger_NoArg(triggerType));
         }
 
-        ////////////////////////////////////////////////////////////
-        // private implementation
-        
-        private IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> SearchTrigger(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name = null)
+        internal void ExecuteTriggers_Named(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name)
         {
-            if (this.vrcTrigger == null) {
-                Iwlog.Error(this.gameObject, "this.vrcTrigger==null");
-                return Enumerable.Empty<VRCSDK2.VRC_Trigger.TriggerEvent>();
-            }
+            ExecuteTriggers(SearchTrigger_Named(triggerType, name));
+        }
 
+        internal int ExecuteTriggers_Collision(VRCSDK2.VRC_Trigger.TriggerType triggerType, LayerMask layer, int count)
+        {
+            return ExecuteTriggers(SearchTrigger_Collision(triggerType, layer, count));
+        }
+
+        internal int ExecuteTriggers(IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> triggers)
+        {
+            foreach (var triggerDef in triggers) {
+                Iwlog.Trace(gameObject, "Emu_Trigger:ExecuteTriggers type=" + triggerDef.TriggerType);
+                ExecuteTriggerActions(triggerDef);
+            }
+            return triggers.Count();
+        }
+
+        // private void EnsureHavingTrigger()
+        // {
+        //     if (this.vrcTrigger == null)
+        //     {
+        //         Iwlog.Error(this.gameObject, "this.vrcTrigger==null");
+        //     }
+        // }
+    
+
+        ////////////////////////////////////////////////////////////
+        // Private implementation
+
+        ////////////////////////////////////////
+        // Collision layer
+
+        // LIMITATION non-TriggerIndividuals behavior may odd if multiple triggers exists with same TriggerType.
+        // Though multiple trigger is not allowed with editor currently, it is possible to have such case as component data.
+        // This implementation holds only one counter for one TriggerType. 
+        
+        private LayerMask layerMask_OnEnterTrigger;
+        private LayerMask layerMask_OnExitTrigger;
+        private LayerMask layerMask_OnEnterCollider;
+        private LayerMask layerMask_OnExitCollider;
+
+        // count for non-TriggerIndividuals
+        private int countFor_OnEnterTrigger;
+        private int countFor_OnExitTrigger;
+        private int countFor_OnEnterCollider;
+        private int countFor_OnExitCollider;
+
+        private LayerMask GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType triggerType)
+        {
+            int layerMask = 0;
+            foreach (var trigger in SearchTrigger_NoArg(triggerType))
+            {
+                layerMask |= trigger.Layers.value;
+            }
+            return layerMask;
+        }
+        
+
+        ////////////////////////////////////////
+        // Accessing trigger-action definiton
+
+        private IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> SearchTrigger_NoArg(VRCSDK2.VRC_Trigger.TriggerType triggerType)
+        {
+            var query = vrcTrigger.Triggers
+                .Where(x => (x.TriggerType == triggerType));
+            return query;
+        }
+        
+        // For Physics collision triggers
+        // ( OnEnterTrigger, OnExitTrigger, OnEnterCollider, OnExitCollider )
+        // Conditions
+        // System.Boolean TriggerIndividuals;
+        // UnityEngine.LayerMask Layers;
+
+        private IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> SearchTrigger_Collision(VRCSDK2.VRC_Trigger.TriggerType triggerType, LayerMask layerMask, int count)
+        {
+            // It's possible to optimize by using pre-limited list (previously searched triggers by TriggerType) than vrcTrigger.Triggers.
+            // (That search is actually done on initialization to get unified layer mask)
+            // But for simplicity, I use vrcTrigger.Triggers for now.
+            
+            var query = vrcTrigger.Triggers
+                .Where(x => (x.TriggerType == triggerType)
+                       && ((x.Layers.value & layerMask.value) != 0)
+                       && ((x.TriggerIndividuals)? true: (count == 0)));
+            
+            Iwlog.Debug("query.Count=" + query.Count());
+            return query;
+        }
+
+        private IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> SearchTrigger_Named(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name)
+        {
             var query = vrcTrigger.Triggers
                 .Where(x => (x.TriggerType == triggerType) && ((name == null) || (x.Name == name)));
 
-            switch (query.Count()) {
-                case 0:
-                    Iwlog.Warn(this.gameObject, "Emu_Trigger: TriggerEvent not found. type=" + triggerType + ", name='" + name + "'");
-                    break;
-                case 1:
-                    break;
-                default:
-                    // CHECK What happens in case of original VRChat client?
-                    Iwlog.Warn(this.gameObject, "Emu_Trigger: Multiple TriggerEvent. type=" + triggerType + ", name='" + name + "'");
-                    break;
+            if (EmulatorSettings.ReportTriggersNotOneNamedMatch)
+            {
+                switch (query.Count())
+                {
+                    case 0:
+                        Iwlog.Warn(this.gameObject, "Emu_Trigger: TriggerEvent not found. type=" + triggerType + ", name='" + name + "'");
+                        break;
+                    case 1:
+                        break;
+                    default:
+                        // CHECK What happens in case of original VRChat client?
+                        Iwlog.Warn(this.gameObject, "Emu_Trigger: Multiple TriggerEvent. type=" + triggerType + ", name='" + name + "'");
+                        break;
+                }
             }
             return query;
         }
+
+        ////////////////////////////////////////
+        // Execute TriggerEvent (i.e. a trigger definition)
 
         static System.Random random = new System.Random(0);
 
         private void ExecuteTriggerActions(VRCSDK2.VRC_Trigger.TriggerEvent triggerEvent)
         {
-            if (triggerEvent.Probabilities.Length == 0) {
-                foreach (var vrcEvent in triggerEvent.Events) {
+            if (triggerEvent.Probabilities.Length == 0)
+            {
+                foreach (var vrcEvent in triggerEvent.Events)
+                {
                     ExecuteTriggerAction(vrcEvent);
                 }
-            } else {
+            }
+            else
+            {
                 // assumes probabilities is nomarilized
                 float psum = triggerEvent.Probabilities.Sum();
                 double rand = random.NextDouble();
                 Iwlog.Trace2("Do Rundomized trigger: probabilities psum=" + psum + ", rand=" + rand);
-                for (int i = 0; i < triggerEvent.Probabilities.Length; i++) {
+                for (int i = 0; i < triggerEvent.Probabilities.Length; i++)
+                {
+                    // CHECK include equal case?
                     rand -= triggerEvent.Probabilities[i];
-                    if (rand <= 0) { // CHECK need equal?
+                    if (rand <= 0)
+                    {
                         Iwlog.Trace2("Do Rundomized trigger: idx=" + i);
                         ExecuteTriggerAction(triggerEvent.Events[i]);
                         break;
@@ -183,6 +331,9 @@ namespace Iwsd
             }
         }
 
+        //////////////////////////////////////////////////
+        // Execution of VrcEvent (i.e. action)
+        
         enum ActionResult
         {
             ComponentMissing,
@@ -542,7 +693,7 @@ namespace Iwsd
             // TODO Add some check avoiding infinite loop
 
             string name = vrcEvent.ParameterString;
-            receiverComp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.Custom, name);
+            receiverComp.ExecuteCustomTrigger(name);
 
             // TODO getting and return proper result value
             return ActionResult.Success;
