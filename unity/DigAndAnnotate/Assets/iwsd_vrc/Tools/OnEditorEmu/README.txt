@@ -38,6 +38,30 @@ Don't use with serious project withdout backup.
 * Only emulate desktop client. VR priority is rather low.
 
 
+## Note
+
+
+### Reproduce defect: OnDestroy trriger doesn't work
+
+Currently (version 2018.3.3), original client doesn't run OnDestroy at all.
+So this emulator omit this feature.
+
+### OnDestroy trigger cause NullReferenceException
+
+If using OnDestroy trigger, you'll see following error message on Unity Console window.
+Please ignore this.
+
+    NullReferenceException: Object reference not set to an instance of an object
+    VRCSDK2.VRC_Trigger.ExecuteTriggerType (TriggerType triggerType)
+    VRCSDK2.VRC_Trigger.OnDestroy ()
+
+<!--
+Original VRC_Trigger removes itself at runtime.
+It is not initialized properly in Unity editor environment.
+That is reason of this error, maybe.
+-->
+
+
 ## Licence etc.
 
 MIT licence

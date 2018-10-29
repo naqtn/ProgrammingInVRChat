@@ -34,5 +34,10 @@ OnEnterTrigger count and OnExitTrigger count can be unbalanced?
 4. Move Object-A outside C, OnExitTrigger happens or not?
 
 
+
+## Lifecycle
+
+### TEST Destory while holding (pickuped)
+
 ---
 end

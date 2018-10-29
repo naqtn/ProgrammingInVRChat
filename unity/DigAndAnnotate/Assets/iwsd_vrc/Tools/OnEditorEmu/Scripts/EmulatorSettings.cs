@@ -9,6 +9,7 @@ namespace Iwsd
 
         public static bool ReportTriggersNotOneNamedMatch = true;
 
+        public static bool EnableIncompatibleRunConsoleCommand = true;
     }
 
 }

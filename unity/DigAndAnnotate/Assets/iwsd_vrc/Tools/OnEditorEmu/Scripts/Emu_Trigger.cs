@@ -65,8 +65,8 @@ namespace Iwsd
 
         // Relay,
         // OnEnable,
-        // OnDestroy,
-        // OnSpawn,
+        // x OnDestroy, // DestroyObject action
+        // x OnSpawn, // SpawnObject action
         // OnNetworkReady,
         // OnPlayerJoined,
         // OnPlayerLeft,
@@ -378,7 +378,9 @@ namespace Iwsd
                     return receivers.Select(r => Execute_SetParticlePlaying(r, vrcEvent));
                 case VRCSDK2.VRC_EventHandler.VrcEventType.TeleportPlayer:
                     return receivers.Select(r => Execute_TeleportPlayer(r, vrcEvent));
-                //  RunConsoleCommand, // hidden
+                //  RunConsoleCommand, NOTE Incomplete implementation for debug // hidden
+                case VRCSDK2.VRC_EventHandler.VrcEventType.RunConsoleCommand:
+                    return receivers.Select(r => Execute_RunConsoleCommand(r, vrcEvent));
                 case VRCSDK2.VRC_EventHandler.VrcEventType.SetGameObjectActive:
                     return receivers.Select(r => Execute_SetGameObjectActive(r, vrcEvent));
                     
@@ -453,6 +455,19 @@ namespace Iwsd
         //////////////////////////////////////////////////////////////////////
         // Each action
 
+        // NOTE This is not equivalent with original. This is implemented for debug and test emulator itself.
+        private ActionResult Execute_RunConsoleCommand(GameObject receiver, VRCSDK2.VRC_EventHandler.VrcEvent vrcEvent)
+        {
+            if (!EmulatorSettings.EnableIncompatibleRunConsoleCommand)
+            {
+                return ActionResult.Success;
+            }
+
+            Iwlog.Debug(gameObject, "RCC:" + vrcEvent.ParameterString);
+            return ActionResult.Success;
+        }
+
+        
         ////////////////////////////////////////
         // Unity basics
 
@@ -573,11 +588,16 @@ namespace Iwsd
             // CHECK What happens multiple VRC_Trigger exists in one GameObject?
             
             // Hook emulation code. (see also. startup Setup_TriggersComponents())
-            var triggerComps = newOne.GetComponentsInChildren<VRCSDK2.VRC_Trigger>(true); // includeInactive = true
-            foreach (var comp in triggerComps)
+            // true: includeInactive
+            foreach (var comp in newOne.GetComponentsInChildren<VRCSDK2.VRC_Trigger>(true))
             {
                 var emu_trigger = comp.gameObject.AddComponent<Emu_Trigger>();
                 emu_trigger.SetupFrom(comp);
+            }
+
+            foreach (var comp in newOne.GetComponentsInChildren<Emu_Trigger>(false))
+            {
+                comp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnSpawn);
             }
             
             return ActionResult.Success;
@@ -586,6 +606,20 @@ namespace Iwsd
 
         private ActionResult Execute_DestroyObject(GameObject receiver, VRCSDK2.VRC_EventHandler.VrcEvent vrcEvent)
         {
+            // CHECK What happens if receiver is inactive?
+
+            // I think MonoBehaviour.OnDestroy() is not good place to implement OnDestroy. So I placed here. 
+            // (When OnDestroy() called, it's almost unable to do any thing as trigger-action system)
+            foreach (var comp in receiver.GetComponentsInChildren<Emu_Trigger>())
+            {
+                if (comp.HasTriggerOf(VRCSDK2.VRC_Trigger.TriggerType.OnDestroy))
+                {
+                    // BUGREPRO 2018.3.3 doesn't run OnDestroy at all.
+                    // comp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnDestroy);
+                    Iwlog.Error(comp.gameObject, "Current client 2018.3.3 doesn't run OnDestroy at all. You can't use");
+                }
+            }
+            
             UnityEngine.Object.Destroy(receiver);
             return ActionResult.Success;
         }
