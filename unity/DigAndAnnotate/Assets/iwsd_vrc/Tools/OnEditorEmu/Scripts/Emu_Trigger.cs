@@ -6,13 +6,17 @@ using System;
 namespace Iwsd
 {
 
+    [Serializable]
     class Val_Trigger
     {
+        // TODO trigger description viewer for play mode
+        
         // string InteractText;
-        public List<VRCSDK2.VRC_Trigger.TriggerEvent> Triggers;
+        [SerializeField]
+        internal List<VRCSDK2.VRC_Trigger.TriggerEvent> Triggers;
         // Proximity;
 
-        public Val_Trigger(VRCSDK2.VRC_Trigger vrcTrigger)
+        internal Val_Trigger(VRCSDK2.VRC_Trigger vrcTrigger)
         {
             this.Triggers = DeepCopyHelper.DeepCopy<List<VRCSDK2.VRC_Trigger.TriggerEvent>>(vrcTrigger.Triggers); 
         }
@@ -21,10 +25,9 @@ namespace Iwsd
     
     class Emu_Trigger : MonoBehaviour
     {
-
-        // TODO Make trigger definition visible with Unity inspector to debug scene.
-        
+        // [SerializeField] // TODO Make trigger definition visible with Unity inspector to debug scene.
         Val_Trigger vrcTrigger;
+
         public string debugString;
 
         // It seems that VRCSDK2.VRC_Trigger destroy itself runtime on UnityEditor.
@@ -37,22 +40,50 @@ namespace Iwsd
             layerMask_OnExitTrigger   = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnExitTrigger);
             layerMask_OnEnterCollider = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnEnterCollider);
             layerMask_OnExitCollider  = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnExitCollider);
+
+
+            var timers = SearchTrigger_NoArg(VRCSDK2.VRC_Trigger.TriggerType.OnTimer);
+            // CHECK what happens if two or more OnTimer entry on original?
+            if (timers.Any())
+            {
+                var trigger = timers.First();
+                timerExecuter = new TimerExecuter(trigger, ExecuteTriggerActions);
+                if (timers.Any())
+                {
+                    Iwlog.Warn(gameObject, "Only one OnTimer trigger supported.");
+                }
+            }
         }
-        
+
+        TimerExecuter timerExecuter;
 
         ////////////////////////////////////////////////////////////
         // Public interface
         
         void OnEnable()
         {
-            Iwlog.Trace(gameObject, "Emu_Trigger:OnEnable:" + debugString);
+            Iwlog.Trace(gameObject, "Emu_Trigger.OnEnable");
+
+            if (timerExecuter != null)
+            {
+                timerExecuter.OnEnable();
+            }
         }
 
         void Start()
         {
-            Iwlog.Trace(gameObject, "Emu_Trigger:Start: debugString=" + debugString);
+            Iwlog.Trace(gameObject, "Emu_Trigger:Start");
         }
 
+
+        void Update()
+        {
+            if (timerExecuter != null)
+            {
+                timerExecuter.Update();
+            }
+        }
+        
         ////////////////////////////////////////
         // VRCSDK2.VRC_Trigger+TriggerType
 
@@ -630,7 +661,7 @@ namespace Iwsd
         // REFINE Parameter extraction sould be done outside of receiver loop.
             
         private ActionResult Execute_VectorSub(GameObject receiver, VRCSDK2.VRC_EventHandler.VrcEvent vrcEvent,
-                                                 Action<Rigidbody, Vector3, bool> action)
+                                               Action<Rigidbody, Vector3, bool> action)
         {
             var receiverComp = receiver.GetComponent<Rigidbody>();
             if (receiverComp == null) {
@@ -1168,4 +1199,78 @@ namespace Iwsd
             return r;
         }
     }
+
+    
+
+    //////////////////////////////////////////////////////////////////////
+    // Misc impl
+
+    ////////////////////////////////////////
+    // Timer
+
+    class TimerExecuter
+    {
+        // If negative timer is stoped
+        private float targetTime;
+        private float timeElapsed;
+        
+        private VRCSDK2.VRC_Trigger.TriggerEvent triggerEvent;
+        // System.Boolean Repeat;
+        // System.Single LowPeriodTime;
+        // System.Single HighPeriodTime;
+        // System.Boolean ResetOnEnable;
+
+        private Action<VRCSDK2.VRC_Trigger.TriggerEvent> fireTriggerAction;
+
+        public TimerExecuter(VRCSDK2.VRC_Trigger.TriggerEvent triggerEvent,
+                             Action<VRCSDK2.VRC_Trigger.TriggerEvent> fireTriggerAction)
+        {
+            // REFINE Should I check argument range?
+            this.triggerEvent = triggerEvent;
+            this.fireTriggerAction = fireTriggerAction;
+        }
+            
+        static System.Random random = new System.Random(0);
+
+        private void Setup()
+        {
+            targetTime = triggerEvent.LowPeriodTime
+                + (triggerEvent.HighPeriodTime - triggerEvent.LowPeriodTime) * (float)random.NextDouble();
+            timeElapsed = 0.0f;
+        }
+
+        public void OnEnable()
+        {
+            if (triggerEvent.ResetOnEnable)
+            {
+                Setup();
+            }
+        }
+        
+        public void Update()
+        {
+            if (targetTime < 0)
+            {
+                return;
+            }
+            
+            timeElapsed += Time.deltaTime;
+            
+            if (targetTime <= timeElapsed)
+            {
+                fireTriggerAction(triggerEvent);
+                    
+                if (triggerEvent.Repeat)
+                {
+                    Setup();
+                }
+                else
+                {
+                    targetTime = -1.0f;
+                }
+            }
+            
+        }
+    }
+
 }
