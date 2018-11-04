@@ -18,7 +18,7 @@ namespace Iwsd
 
     public class IwsdSubInspectorWindow : EditorWindow
     {
-        [MenuItem("VRC_Iwsd/Open Sub Inspector")]
+        [MenuItem("Window/VRC_Iwsd/Open Sub Inspector")]
         static void OpenIwsdSubInspectorWindow()
         {
             EditorWindow.GetWindow<IwsdSubInspectorWindow>("Sub Inspector");
