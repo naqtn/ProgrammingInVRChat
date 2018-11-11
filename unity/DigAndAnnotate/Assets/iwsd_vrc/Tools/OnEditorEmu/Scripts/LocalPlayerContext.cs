@@ -4,13 +4,24 @@ using System.Collections.Generic;
 
 namespace Iwsd
 {
+    // An interface to avoid circular dependency in design.
+    // Let LocalPlayerContext independent from other parts (except VRC components and basic tools like logging) 
+    interface ILocalPlayer
+    {
+        void TeleportTo(Transform destination);
+    }
 
+    
     // REFINE Make interface and divide implementation to avoid circular reference
     // REFINE protection level of class and methods
     
     public class LocalPlayerContext {
 
-        public static GameObject PlayerGameObject { get; set; }
+        private static ILocalPlayer LocalPlayer;
+        internal static void SetLocalPlayer(ILocalPlayer aPlayer)
+        {
+            LocalPlayer = aPlayer;
+        }
 
         private static VRCSDK2.VRC_SceneDescriptor _SceneDescriptor;
         private static Dictionary<string, Material> pathToMaterial;
@@ -47,15 +58,77 @@ namespace Iwsd
             return map;
         }
 
-            
-        ////////////////////////////////////////////////////////////
-
-        // 
-        public static void TeleportPlayer(Vector3 position, bool alignRoomToDestination)
+        private static int selectSpawnTransformIndex = 0;
+        static System.Random random = new System.Random(0);
+    
+        private static Transform selectSpawnTransform()
         {
-            PlayerGameObject.transform.position = position;
+            if (_SceneDescriptor.spawns.Length == 0)
+            {
+                Iwlog.Error("SceneDescriptor spawns has no element");
+                // Use SceneDescriptor itself as a replacement
+                return _SceneDescriptor.transform;
+            }
+            
+            switch (_SceneDescriptor.spawnOrder)
+            {
+                case VRCSDK2.VRC_SceneDescriptor.SpawnOrder.First:
+                    return _SceneDescriptor.spawns[0];
+                        
+                case VRCSDK2.VRC_SceneDescriptor.SpawnOrder.Sequential:
+                    selectSpawnTransformIndex = (selectSpawnTransformIndex + 1) % _SceneDescriptor.spawns.Length;
+                    return _SceneDescriptor.spawns[selectSpawnTransformIndex];
+                    
+                case VRCSDK2.VRC_SceneDescriptor.SpawnOrder.Random:
+                    return _SceneDescriptor.spawns[random.Next(0, _SceneDescriptor.spawns.Length)];
+                    
+                case VRCSDK2.VRC_SceneDescriptor.SpawnOrder.Demo:
+                    // VR_FEATURE
+                    // Demo means "move center of room scale to transform position"
+                    // CHECK Then, which value does it use?
+                    Iwlog.Warn("SpawnOrder=Demo is not supported");
+                    return _SceneDescriptor.spawns[0];
+                    
+                default:
+                    Iwlog.Error("Unknown spawnOrder value=" + _SceneDescriptor.spawnOrder);
+                    return _SceneDescriptor.spawns[0];
+            }
+        }
+        
+        ////////////////////////////////////////////////////////////
+        // Public static interface 
+        
+        public static void MovePlayerToSpawnLocation()
+        {
+            var destination = selectSpawnTransform();
 
-            // TODO Check AlignRoomToDestination spec
+            // just check value
+            switch (_SceneDescriptor.spawnOrientation)
+            {
+                case VRCSDK2.VRC_SceneDescriptor.SpawnOrientation.Default:
+                    break;
+                case VRCSDK2.VRC_SceneDescriptor.SpawnOrientation.AlignPlayerWithSpawnPoint:
+                    break;
+                case VRCSDK2.VRC_SceneDescriptor.SpawnOrientation.AlignRoomWithSpawnPoint:
+                    // VR_FEATURE
+                    Iwlog.Warn("SpawnOrientation=AlignRoomWithSpawnPoint is not supported");
+                    break;
+                default:
+                    Iwlog.Error("Unknown spawnOrientation value=" + _SceneDescriptor.spawnOrientation);
+                    break;
+            }
+
+            LocalPlayer.TeleportTo(destination);
+        }
+
+        
+        // 
+        public static void TeleportPlayer(Transform destination, bool alignRoomToDestination)
+        {
+            // VR_FEATURE
+            Iwlog.Warn("TeleportPlayer AlignRoomToDestination is not supported");
+
+            LocalPlayer.TeleportTo(destination);
         }
 
 

@@ -610,3 +610,55 @@ Members {
  Field Name=MidiNote
  Field Name=OscAddr
 }
+
+Name:SpawnOrder
+FullName:VRCSDK2.VRC_SceneDescriptor+SpawnOrder
+Public Fields {
+ public System.Int32 value__;
+ public VRCSDK2.VRC_SceneDescriptor+SpawnOrder First;
+ public VRCSDK2.VRC_SceneDescriptor+SpawnOrder Sequential;
+ public VRCSDK2.VRC_SceneDescriptor+SpawnOrder Random;
+ public VRCSDK2.VRC_SceneDescriptor+SpawnOrder Demo;
+}
+  BaseType:VRCSDK2.VRC_SceneDescriptor+SpawnOrder
+  BaseType:System.Enum
+  BaseType:System.ValueType
+  BaseType:System.Object
+Members {
+ Field Name=value__
+ Field Name=First
+ Field Name=Sequential
+ Field Name=Random
+ Field Name=Demo
+}
+Enum {
+First,
+Sequential,
+Random,
+Demo,
+}
+
+
+Name:SpawnOrientation
+FullName:VRCSDK2.VRC_SceneDescriptor+SpawnOrientation
+Public Fields {
+ public System.Int32 value__;
+ public VRCSDK2.VRC_SceneDescriptor+SpawnOrientation Default;
+ public VRCSDK2.VRC_SceneDescriptor+SpawnOrientation AlignPlayerWithSpawnPoint;
+ public VRCSDK2.VRC_SceneDescriptor+SpawnOrientation AlignRoomWithSpawnPoint;
+}
+  BaseType:VRCSDK2.VRC_SceneDescriptor+SpawnOrientation
+  BaseType:System.Enum
+  BaseType:System.ValueType
+  BaseType:System.Object
+Members {
+ Field Name=value__
+ Field Name=Default
+ Field Name=AlignPlayerWithSpawnPoint
+ Field Name=AlignRoomWithSpawnPoint
+}
+Enum {
+Default,
+AlignPlayerWithSpawnPoint,
+AlignRoomWithSpawnPoint,
+}

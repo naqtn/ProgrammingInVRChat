@@ -38,6 +38,7 @@ namespace Iwsd
         private GameObject hoverAnchor;
 
         // get the incremental value of mouse moving
+        // (angle in degrees)
         private Vector2 mouseLook;
         // smooth the mouse moving
         private Vector2 smoothV;
@@ -267,7 +268,7 @@ namespace Iwsd
                 return;
             }
 
-            // TODO REFINE Dependancy of PlayerControl.cs and PlayerCameraControl.cs and player game-objects structure
+            // FIXME disolve circular dependancy between PlayerControl.cs and PlayerCameraControl.cs and define player game-objects structure well
             var player = character.GetComponent<PlayerControl>();
 
             // TODO support PickupOrientation
@@ -287,7 +288,9 @@ namespace Iwsd
             smoothV.y = Mathf.Lerp(smoothV.y, mouseDelta.y, 1f / smoothing);
             // incrementally add to the camera look
             mouseLook += smoothV;
-
+            mouseLook.x = mouseLook.x % 360.0f;
+            mouseLook.y = mouseLook.y % 360.0f;
+            
             // mouse up-down => camera up-down
             // vector3.right means the x-axis
             transform.localRotation = Quaternion.AngleAxis(-mouseLook.y, Vector3.right);
@@ -301,6 +304,23 @@ namespace Iwsd
             character.transform.localRotation = Quaternion.AngleAxis(mouseLook.x, character.transform.up);
         }
 
+
+        // use for TeleportTo
+        internal void SetRotation(Quaternion rotation)
+        {
+            float yRotate = rotation.eulerAngles.y;
+            mouseLook.x = yRotate;
+
+            // FIXME quick hack.
+            // Start() is not called yet.
+            //   PostProcessScene => Player prefab (Object.Instantiate) => MovePlayerToSpawnLocation
+            if (character == null) {
+                character = this.transform.parent.gameObject;
+            }
+
+            character.transform.localRotation = Quaternion.AngleAxis(mouseLook.x, character.transform.up);
+        }
+        
         private void OperateToggleCursorLock()
         {
             if (Input.GetKeyDown(KeyCode.Tab)) {

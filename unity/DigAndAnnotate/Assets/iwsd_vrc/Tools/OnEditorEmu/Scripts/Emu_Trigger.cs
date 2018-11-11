@@ -103,7 +103,7 @@ namespace Iwsd
         // OnPlayerLeft,
         // x OnPickupUseDown, // from Player
         // x OnPickupUseUp, // from Player
-        // OnTimer,
+        // x OnTimer,
 
         // OnEnterTrigger, // Collider.OnTriggerEnter
         void OnTriggerEnter(Collider other)
@@ -774,18 +774,18 @@ namespace Iwsd
         {
             ActionResult result = ActionResult.Success;
 
-            var position = receiver.transform.position;
+            var destination = receiver.transform;
 
             switch (vrcEvent.ParameterBoolOp) {
                 case VRCSDK2.VRC_EventHandler.VrcBooleanOp.False:
-                    LocalPlayerContext.TeleportPlayer(position, false);
+                    LocalPlayerContext.TeleportPlayer(destination, false);
                     break;
                 case VRCSDK2.VRC_EventHandler.VrcBooleanOp.True:
-                    LocalPlayerContext.TeleportPlayer(position, true);
+                    LocalPlayerContext.TeleportPlayer(destination, true);
                     break;
                 case VRCSDK2.VRC_EventHandler.VrcBooleanOp.Toggle:
                     Iwlog.Warn(gameObject, "Invalid ParameterBoolOp. value='" + vrcEvent.ParameterBoolOp + "' for TeleportPlayer action");
-                    LocalPlayerContext.TeleportPlayer(position, false); // exec anyway
+                    LocalPlayerContext.TeleportPlayer(destination, false); // exec anyway
                     break;
                 default:
                     Iwlog.Error(gameObject, "Unkonown ParameterBoolOp. value='" + vrcEvent.ParameterBoolOp + "'");

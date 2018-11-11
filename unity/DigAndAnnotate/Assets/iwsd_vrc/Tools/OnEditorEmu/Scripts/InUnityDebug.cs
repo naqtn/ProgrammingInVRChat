@@ -83,15 +83,24 @@ namespace Iwsd
         {
             // Put player prefab
             var playerPrefab = Resources.Load<GameObject>(playerPrefabPath);
-            if (playerPrefab == null) {
+            if (playerPrefab == null)
+            {
                 Iwlog.Error("PlayerPrefab not found. path='" + playerPrefabPath + "'");
-            } else {
+            }
+            else
+            {
                 var playerInstance = Object.Instantiate(playerPrefab);
                 var scene = EditorSceneManager.GetActiveScene();
                 EditorSceneManager.MoveGameObjectToScene(playerInstance, scene);
-                // TODO move to spawn point
 
-                LocalPlayerContext.PlayerGameObject = playerInstance;
+                var playerCtrl = playerInstance.GetComponent<PlayerControl>();
+                if (!playerCtrl)
+                {
+                    Iwlog.Error("PlayerPrefab must have PlayerControl component");
+                }
+                LocalPlayerContext.SetLocalPlayer(playerCtrl);
+
+                LocalPlayerContext.MovePlayerToSpawnLocation();
             }
         }
 

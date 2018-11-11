@@ -5,8 +5,8 @@ using System.Collections;
 namespace Iwsd
 {
 
-    public class PlayerControl : MonoBehaviour {
-
+    public class PlayerControl : MonoBehaviour, ILocalPlayer
+    {
         // TODO Use values from VRC_SceneDescriptor
         private float speed = 4.0F;
         private float jumpSpeed = 5.0F;
@@ -43,14 +43,15 @@ namespace Iwsd
         // [Unity: CHARACTER CONTROLLER vs RIGIDBODY](https://medium.com/ironequal/unity-character-controller-vs-rigidbody-a1e243591483)
     
 
-        void Start() {
+        void Start()
+        {
             controller = GetComponent<CharacterController>();
 
             SetupCamera();
         }
     
-        void Update() {
-            
+        void Update()
+        {
             // TODO ESC to menu
             // TODO Shift to run
             // TODO respawn hight
@@ -65,6 +66,20 @@ namespace Iwsd
             }
             moveDirection.y -= gravity * Time.deltaTime;
             controller.Move(moveDirection * Time.deltaTime);
+        }
+
+
+        ////////////////////////////////////////////////////////////
+        // LocalPlayer implementation
+        
+        public void TeleportTo(Transform destination)
+        {
+            this.transform.position = destination.position;
+
+            // FIXME disolve circular dependancy between PlayerControl.cs and PlayerCameraControl.cs
+            // (Though here, it's fine that PlayerControl depends PlayerCameraControl.)
+            var ctrl = PlayerCamera.GetComponent<PlayerCameraControl>();
+            ctrl.SetRotation(destination.rotation);
         }
     }
 
