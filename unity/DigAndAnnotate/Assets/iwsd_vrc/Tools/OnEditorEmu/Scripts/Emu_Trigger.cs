@@ -48,7 +48,7 @@ namespace Iwsd
             {
                 var trigger = timers.First();
                 timerExecuter = new TimerExecuter(trigger, ExecuteTriggerActions);
-                if (timers.Any())
+                if (timers.Skip(1).Any())
                 {
                     Iwlog.Warn(gameObject, "Only one OnTimer trigger supported.");
                 }
