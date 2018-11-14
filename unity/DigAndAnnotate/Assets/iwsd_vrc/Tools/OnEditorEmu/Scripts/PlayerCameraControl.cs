@@ -77,7 +77,7 @@ namespace Iwsd
         private bool mainOperateButtonDown;
         private bool mainOperateButtonUp;
         private bool subOperateButtonDown;
-        private bool subOperateButtonUp;
+        // private bool subOperateButtonUp; // no use currently
         
         // pickup related
         // REFINE make a class that handle pickup
@@ -92,7 +92,7 @@ namespace Iwsd
             mainOperateButtonDown = Input.GetMouseButtonDown(0);
             mainOperateButtonUp = Input.GetMouseButtonUp(0);
             subOperateButtonDown = Input.GetMouseButtonDown(1);
-            subOperateButtonUp = Input.GetMouseButtonUp(1);
+            // subOperateButtonUp = Input.GetMouseButtonUp(1);
 
             // CHECK precise spec of original UI.
             // - This is "skipping while holding". Is it suitable? 

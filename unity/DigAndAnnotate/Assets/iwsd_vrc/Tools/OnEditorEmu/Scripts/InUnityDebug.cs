@@ -64,6 +64,9 @@ namespace Iwsd
         {
             foreach (VRCSDK2.VRC_Trigger triggerComp in UnityEngine.Resources.FindObjectsOfTypeAll(typeof(VRCSDK2.VRC_Trigger)))
             {
+                // Skip VRC_Trigger in prefab asset
+                // CHECK Do I have to skip ?
+                // 
                 // https://answers.unity.com/questions/218429/how-to-know-if-a-gameobject-is-a-prefab.html
                 // (In latest Unity GetPrefabParent is obsolete.)
                 bool isPrefabOriginal = (PrefabUtility.GetPrefabParent(triggerComp.gameObject) == null)
@@ -80,6 +83,8 @@ namespace Iwsd
             }
         }
 
+        ////////////////////////////////////////////////////////////
+        
         static private GameObject SpawnFromPrefab(string path)
         {
             var prefab = Resources.Load<GameObject>(path);

@@ -16,8 +16,9 @@ namespace Iwsd
             }
         }
 
-        void Awake()
+        override protected void Awake()
         {
+            base.Awake();
             // m_InputOverride is not documented.
             // This is equivalent to BaseInputModule.inputOverride that is introduced in later version.
             // ( https://docs.unity3d.com/ScriptReference/EventSystems.BaseInputModule-inputOverride.html )
