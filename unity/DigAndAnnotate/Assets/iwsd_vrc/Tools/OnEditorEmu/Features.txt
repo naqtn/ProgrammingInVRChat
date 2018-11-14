@@ -10,7 +10,15 @@
 - Pickup operation
     - pickup, drop
     - use down
-
+- world descriptor setting (not completed)
+    - player spawn position
+- Quick menu
+    - (as world space canvas "diegetic UI")
+    - Toggle quick menu: ESC or LeftShift + C
+        - (Unity editor unlocks mouse cursor when recieve ESC key. LeftShift + C is for avoiding this behavior.)
+    - Operations
+        - Respawn
+        - Quit program
 
 ### Trigger-action system
 
@@ -35,7 +43,11 @@
 - Pickup, UseDown, UseUp, Drop triggers
 - Timer
     - Compatibility is not checked because of defects of original implantation
-    
+- Physics Collision
+    - Both trigger and collider
+    - OnParticleCollision
+    - Slightly different than buggy original. Compatibility check is not completed.
+
 
 ## Not implemented
 
@@ -54,8 +66,7 @@
 
 ### Local player
 
-- use world descriptor setting
-    - player spawn position
+- world descriptor setting
     - respawn height
     - jump power
     - Reference camera
@@ -67,10 +78,11 @@
 
 ### Trigger-action system
 
-- Many other triggers
+- Triggers
     - Life cycle (spawn, enable disable, destroy)
     - Key
-    - Collision
+    - OnAvatarHit
+    - Relay
     - VRC component dependent trigger (OnVideoStart etc.)
 - Delay before action
 - Extra (minor) featurs of action
@@ -80,11 +92,17 @@
 - VRC component dependent actions
     - Combat system
 - Pickup minor features
+    - indirect holding (move holding object with physics but not kinematic)
     - change hover text
     - AutoHold AutoDetect
     - PickupOrientation
 - Timer compatibility test
     - (not checked because of defects of original implantation)
+
+
+## Tuning
+
+- Raycast cost (length, mask, ...)
 
 
 ## Idea
@@ -93,6 +111,8 @@
     - Pause execution of trigger-action if some condition become true
 - Test automation
     - Automaticall operation and asset condition
+- VRC component access gateway
+    - Concentrate dependancy at a point
 
 ---
 end

@@ -61,7 +61,7 @@ public class IwsdSpikeWindow2 : EditorWindow
                 // Type.AssemblyQualifiedName
                 // VRCSDK2.VRC_EventHandler+VrcEvent, VRCSDK2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=67033c44591afb45
                 
-                examTypeResult = ExamType(Type.GetType(s));
+                examTypeResult = ExamType(TypeByName(s));
             }
             catch (Exception e)
             {
@@ -82,6 +82,22 @@ public class IwsdSpikeWindow2 : EditorWindow
         // EditorGUILayout.TextArea(result);
 	// EditorGUILayout.LabelField("bbb:");
     }
+
+    // https://stackoverflow.com/questions/20008503/get-type-by-name/20008954#20008954
+    public static Type TypeByName(string name)
+    {
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) // .Reverse()
+        {
+            var tt = assembly.GetType(name);
+            if (tt != null)
+            {
+                return tt;
+            }
+        }
+        
+        return null;
+    }
+
     
     static string ExamType(Type type)
     {
@@ -93,7 +109,8 @@ public class IwsdSpikeWindow2 : EditorWindow
         var buf = new System.Text.StringBuilder();
         buf.Append("Name:" + type.Name + "\n");
         buf.Append("FullName:" + type.FullName + "\n");
-        
+        buf.Append("AssemblyQualifiedName:" + type.AssemblyQualifiedName + "\n");
+            
         buf.Append("Public Fields {\n");
         foreach (FieldInfo info in type.GetFields())
         {

@@ -15,7 +15,9 @@ namespace Iwsd
         public GameObject PlayerCamera;
         public GameObject RightArm;
         public GameObject RightHoldPosition;
-    
+        public GameObject QuckMenuInitLoc;
+        internal GameObject QuickMenu;
+        
         private Vector3 moveDirection = Vector3.zero;
 
         private CharacterController controller;
@@ -49,26 +51,63 @@ namespace Iwsd
 
             SetupCamera();
         }
-    
+
+
         void Update()
         {
-            // TODO ESC to menu
             // TODO Shift to run
             // TODO respawn hight
-            
+
+            ToggleQuickMenuOperation();
+            MovePlayerOperation();
+        }
+
+
+        ////////////////////////////////////////////////////////////
+
+        void MovePlayerOperation()
+        {
             if (controller.isGrounded) {
                 moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
                 moveDirection = transform.TransformDirection(moveDirection);
                 moveDirection *= speed;
                 if (Input.GetButton("Jump"))
+                {
                     moveDirection.y = jumpSpeed;
-            
+                }
             }
             moveDirection.y -= gravity * Time.deltaTime;
             controller.Move(moveDirection * Time.deltaTime);
         }
 
 
+        // Toggle menu
+        // "Cancel" is usually bind to ESC
+        // Alternative bind : LeftShift + C
+        // (In UnitEditor ESC activates cursor automatically. you can avoid this behavior by using alternative bind.)
+        void ToggleQuickMenuOperation()
+        {
+            if (Input.GetButtonUp("Cancel")
+                #if UNITY_EDITOR
+                || (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.C))
+                #endif
+                )
+            {
+                Iwlog.Trace("Toggle QuickMenu");
+                if (QuickMenu.activeSelf)
+                {
+                    QuickMenu.SetActive(false);
+                }
+                else
+                {
+                    QuickMenu.transform.position = QuckMenuInitLoc.transform.position;
+                    QuickMenu.transform.rotation = QuckMenuInitLoc.transform.rotation;
+                    QuickMenu.SetActive(true);
+                }
+            }
+        }
+
+        
         ////////////////////////////////////////////////////////////
         // LocalPlayer implementation
         

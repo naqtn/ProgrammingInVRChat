@@ -12,6 +12,7 @@ namespace Iwsd
     {
 
         static string playerPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_Player";
+        static string quickMenuPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_QuickMenu";
         
         // This is entry point of this emulator.
         [PostProcessScene]
@@ -79,29 +80,74 @@ namespace Iwsd
             }
         }
 
-        static private void SpawnPlayerObject()
+        static private GameObject SpawnFromPrefab(string path)
         {
-            // Put player prefab
-            var playerPrefab = Resources.Load<GameObject>(playerPrefabPath);
-            if (playerPrefab == null)
+            var prefab = Resources.Load<GameObject>(path);
+            if (prefab == null)
             {
-                Iwlog.Error("PlayerPrefab not found. path='" + playerPrefabPath + "'");
+                Iwlog.Error("Prefab not found. path='" + path + "'");
+                return null;
             }
-            else
+            
+            var instance = Object.Instantiate(prefab);
+            var scene = EditorSceneManager.GetActiveScene();
+            EditorSceneManager.MoveGameObjectToScene(instance, scene);
+
+            return instance;
+        }
+        
+        static private bool SetupQuickMenu(PlayerControl playerCtrl)
+        {
+            var quickMenu = SpawnFromPrefab(quickMenuPrefabPath);
+            if (!quickMenu)
             {
-                var playerInstance = Object.Instantiate(playerPrefab);
-                var scene = EditorSceneManager.GetActiveScene();
-                EditorSceneManager.MoveGameObjectToScene(playerInstance, scene);
-
-                var playerCtrl = playerInstance.GetComponent<PlayerControl>();
-                if (!playerCtrl)
-                {
-                    Iwlog.Error("PlayerPrefab must have PlayerControl component");
-                }
-                LocalPlayerContext.SetLocalPlayer(playerCtrl);
-
-                LocalPlayerContext.MovePlayerToSpawnLocation();
+                return false;
             }
+
+            var canvasObj = quickMenu.transform.Find("Canvas");
+            if (!canvasObj) {
+                Iwlog.Error("QuickMenu Canvas object not found.");
+                return false;
+            }
+            var canvas = canvasObj.GetComponent<UnityEngine.Canvas>();
+            if (!canvas) {
+                Iwlog.Error("QuickMenu Canvas component not found.");
+                return false;
+            }
+            
+            var camera = playerCtrl.PlayerCamera.GetComponent<Camera>();
+            canvas.worldCamera = camera;
+
+            playerCtrl.QuickMenu = quickMenu;
+
+            // initial state is inactive
+            quickMenu.SetActive(false);
+
+            return true;
+        }
+
+
+        static private bool SpawnPlayerObject()
+        {
+            var playerInstance = SpawnFromPrefab(playerPrefabPath);
+            if (!playerInstance)
+            {
+                return false;
+            }
+
+            var playerCtrl = playerInstance.GetComponent<PlayerControl>();
+            if (!playerCtrl)
+            {
+                Iwlog.Error("PlayerPrefab must have PlayerControl component");
+                return false;
+            }
+            LocalPlayerContext.SetLocalPlayer(playerCtrl);
+
+            SetupQuickMenu(playerCtrl);
+            
+            LocalPlayerContext.MovePlayerToSpawnLocation();
+
+            return true;
         }
 
     }
