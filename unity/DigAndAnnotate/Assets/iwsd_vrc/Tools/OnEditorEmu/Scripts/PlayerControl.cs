@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections;
-
+using UnityEngine.EventSystems;
 
 namespace Iwsd
 {
@@ -12,10 +12,15 @@ namespace Iwsd
         private float jumpSpeed = 5.0F;
         private float gravity = 20.0F;
 
+        // REFINE How to define player game-objects structure. see also PlayerCameraControl.cs 
         public GameObject PlayerCamera;
         public GameObject RightArm;
         public GameObject RightHoldPosition;
+        public GameObject EventSystemHolder;
         public GameObject QuckMenuInitLoc;
+
+        // Quick Menu object comes from a prefab
+        // REFINE Is it needed to define quick menu solely (or separately) in other prefab ?
         internal GameObject QuickMenu;
         
         private Vector3 moveDirection = Vector3.zero;
@@ -38,9 +43,6 @@ namespace Iwsd
         
         }
 
-        // TODO goto spawn point
-        // see VRC_SceneDescriptor
-        
         // CHECK Is CharacterController good enough?
         // [Unity: CHARACTER CONTROLLER vs RIGIDBODY](https://medium.com/ironequal/unity-character-controller-vs-rigidbody-a1e243591483)
     
@@ -58,6 +60,7 @@ namespace Iwsd
             // TODO Shift to run
             // TODO respawn hight
 
+            CheckEvnetSystem();
             ToggleQuickMenuOperation();
             MovePlayerOperation();
         }
@@ -65,7 +68,7 @@ namespace Iwsd
 
         ////////////////////////////////////////////////////////////
 
-        void MovePlayerOperation()
+        private void MovePlayerOperation()
         {
             if (controller.isGrounded) {
                 moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
@@ -81,11 +84,28 @@ namespace Iwsd
         }
 
 
+        private void CheckEvnetSystem()
+        {
+            // Disable other EventSystem.
+            // Though Unity warns as "Multiple EventSystems in scene... this is not supported",
+            // after that our EventSystem starts to work.
+            
+            if ((EventSystem.current != null) && (EventSystem.current.gameObject != EventSystemHolder))
+            {
+                EventSystem.current.enabled = false;
+                var theEventSystem = EventSystemHolder.GetComponent<EventSystem>();
+                // To call OnEnable()
+                theEventSystem.enabled = false;
+                theEventSystem.enabled = true;
+            }
+        }
+
+        
         // Toggle menu
         // "Cancel" is usually bind to ESC
         // Alternative bind : LeftShift + C
-        // (In UnitEditor ESC activates cursor automatically. you can avoid this behavior by using alternative bind.)
-        void ToggleQuickMenuOperation()
+        // (In UnitEditor ESC activates cursor automatically. You can avoid this behavior by using alternative bind.)
+        private void ToggleQuickMenuOperation()
         {
             if (Input.GetButtonUp("Cancel")
                 #if UNITY_EDITOR
