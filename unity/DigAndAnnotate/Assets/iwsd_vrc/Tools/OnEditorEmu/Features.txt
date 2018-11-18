@@ -54,6 +54,7 @@
 - Network related
     - Multi user
     - Trigger system broadcast type
+    - SendRPC target
     - Voice chat features
 - VRC components other than VRC_Trigger
     - (Some will work without tewaks. VRC_AudioBank seems working via RPC)
