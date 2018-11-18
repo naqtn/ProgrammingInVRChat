@@ -30,7 +30,7 @@ namespace Iwsd
         }
 
         string lastMessageString;
-        MessageType lastMessageType;
+        MessageType lastMessageType = MessageType.None;
         int lastInstanceId;
 
         void OnGUI ()
@@ -42,7 +42,8 @@ namespace Iwsd
             {
                 return;
             }
-        
+
+            // CHECK ExecuteInEditMode attribute and Update
             if ((active.GetInstanceID() != lastInstanceId) || CheckComponentAgreementChanged(active))
             {
                 lastInstanceId = active.GetInstanceID();

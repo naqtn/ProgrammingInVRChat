@@ -23,38 +23,55 @@ namespace Iwsd
             LocalPlayer = aPlayer;
         }
 
+        private static string enableSimulator_key = "Iwsd.OnEditorEmu.EnableSimulator";
+        public static bool EnableSimulator {
+            #if UNITY_EDITOR
+            // initial value null become false
+            get {return System.Convert.ToBoolean(UnityEditor.EditorUserSettings.GetConfigValue(enableSimulator_key));}
+            set {UnityEditor.EditorUserSettings.SetConfigValue(enableSimulator_key, value.ToString());}
+            #else
+            get {return true;}
+            set {}
+            #endif
+        }
+        
         private static VRCSDK2.VRC_SceneDescriptor _SceneDescriptor;
         private static Dictionary<string, Material> pathToMaterial;
         private static Dictionary<string, GameObject> pathToPrefabs;
     
-        public static VRCSDK2.VRC_SceneDescriptor SceneDescriptor
+        internal static VRCSDK2.VRC_SceneDescriptor SceneDescriptor
         {
             // get;
             set {
                 _SceneDescriptor = value;
 
-                // REFINE Should I make another? This implementation requires UnityEditor.
-                pathToMaterial = makeAssetPathMap<Material>(_SceneDescriptor.DynamicMaterials.ToArray());
-                pathToPrefabs = makeAssetPathMap<GameObject>(_SceneDescriptor.DynamicPrefabs.ToArray());
+                pathToMaterial = makeAssetPathMap<Material>(_SceneDescriptor.DynamicMaterials);
+                pathToPrefabs = makeAssetPathMap<GameObject>(_SceneDescriptor.DynamicPrefabs);
             }
         }
 
-        private static Dictionary<string, T> makeAssetPathMap<T>(T[] objects)
+        private static Dictionary<string, T> makeAssetPathMap<T>(List<T> objects)
             where T : UnityEngine.Object
         {
             var map = new Dictionary<string, T>();
 
-#if UNITY_EDITOR // This implementation requires UnityEditor.
-            foreach (var obj in objects) {
+            #if UNITY_EDITOR // This implementation requires UnityEditor.
+            foreach (T obj in objects) {
                 var p =  UnityEditor.AssetDatabase.GetAssetPath(obj);
-                Iwlog.Debug(" path='" + p + "'");
+                Iwlog.Trace("asset path='" + p + "'");
                 if (map.ContainsKey(p)) {
                     Iwlog.Warn("Duplicate?: path='" + p + "'");
                 } else {
                     map[p] = obj;
                 }
             }
-#endif
+            #else
+            // REFINE implement asset mapper withdout UnityEditor
+            // (Original matching rule is odd. Wait to be cleared...
+            // https://vrchat.canny.io/bug-reports/p/setmaterial-action-use-wrong-material-named-similarly )
+            Iwlog.Error("Not implemented withdout UNITY_EDITOR case");
+            #endif
+            
             return map;
         }
 
@@ -76,7 +93,7 @@ namespace Iwsd
                     return _SceneDescriptor.spawns[0];
                         
                 case VRCSDK2.VRC_SceneDescriptor.SpawnOrder.Sequential:
-                    selectSpawnTransformIndex = (selectSpawnTransformIndex + 1) % _SceneDescriptor.spawns.Length;
+                    selectSpawnTransformIndex = selectSpawnTransformIndex++ % _SceneDescriptor.spawns.Length;
                     return _SceneDescriptor.spawns[selectSpawnTransformIndex];
                     
                 case VRCSDK2.VRC_SceneDescriptor.SpawnOrder.Random:

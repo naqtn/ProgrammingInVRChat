@@ -13,7 +13,7 @@ namespace Iwsd
 
         static string playerPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_Player";
         static string quickMenuPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_QuickMenu";
-        
+
         // This is entry point of this emulator.
         [PostProcessScene]
         static void OnPostProcessScene()
@@ -22,7 +22,13 @@ namespace Iwsd
                 // CHECK Unity spec. Is this condition suitable?
                 return;
             }
-            
+
+            if (!LocalPlayerContext.EnableSimulator)
+            {
+                // REFINE Is there smart way to alternate between simulator and VRC SDK uploading .
+                return;
+            }
+    
             // NOTE https://anchan828.github.io/editor-manual/web/callbacks.html
             // EditorSceneManager.GetSceneManagerSetup()
         
