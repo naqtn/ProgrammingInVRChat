@@ -31,7 +31,7 @@ namespace Iwsd
             // (see https://bitbucket.org/Unity-Technologies/ui/src/378bd9240df3ac323ac3de9274dd381ec99f9ebe/UnityEngine.UI/EventSystem/InputModules/PointerInputModule.cs?at=5.6&fileviewer=file-view-default#PointerInputModule.cs-194 )
             // (PointerInputModule is indirect super class of this class.)
             // 
-            // We use world space canvas to realize "diegetic UI". And there is no movable mouse cursor.
+            // We use world space canvas to realize "Spatial UI" or "Diegetic UI". And there is no movable mouse cursor.
             // (https://unity3d.com/learn/tutorials/topics/virtual-reality/user-interfaces-vr)
             // So, temporary change lockState to None to make PointerInputModule working.
 
