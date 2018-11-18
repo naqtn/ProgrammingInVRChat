@@ -16,6 +16,14 @@ using System.Runtime.Serialization;
  * This is for emulator developer not for emulator user. 
  */
 
+// suppress warnings because this is not production code
+#pragma warning disable CS0649, CS0414, CS0219
+
+// CS0649 field 'field' is never assigned to, and will always have its default value 'value'
+// CS0414 The private field 'field' is assigned but its value is never used
+// CS0219 The variable 'variable' is assigned but its value is never used
+
+
 /*
  * Research VRC component classes
  */
