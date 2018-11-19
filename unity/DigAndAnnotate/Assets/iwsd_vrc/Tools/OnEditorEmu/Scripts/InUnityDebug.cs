@@ -82,8 +82,8 @@ namespace Iwsd
                     continue;
                 }
                 
+                // Emu_Trigger find brother VRC_Trigger by itself
                 var emu_trigger = triggerComp.gameObject.AddComponent<Emu_Trigger>();
-                emu_trigger.SetupFrom(triggerComp);
  
                 emu_trigger.debugString = triggerComp.gameObject.name;
             }

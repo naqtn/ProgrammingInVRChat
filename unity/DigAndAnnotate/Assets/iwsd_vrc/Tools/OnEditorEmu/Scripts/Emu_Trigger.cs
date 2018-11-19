@@ -28,12 +28,46 @@ namespace Iwsd
         // [SerializeField] // TODO Make trigger definition visible with Unity inspector to debug scene.
         Val_Trigger vrcTrigger;
 
+        // VRCSDK2.VRC_Trigger
+        private int pairedTriggerInstanceId;
+
         public string debugString;
 
+        void Awake()
+        {
+            // Iwlog.Warn(gameObject, "Awake.");
+
+            // search pairing VRC_Trigger by myself
+            foreach(var orig in GetComponents<VRCSDK2.VRC_Trigger>())
+            {
+                var origid = orig.GetInstanceID();
+                if (FindPairedBrother(origid) == null)
+                {
+                    SetupFrom(orig);
+                    return;
+                }
+            }
+            Iwlog.Error(gameObject, "Not found pairing VRC_Trigger");
+        }
+
+        private Emu_Trigger FindPairedBrother(int origid)
+        {
+            foreach(var bro in GetComponents<Emu_Trigger>())
+            {
+                if (bro.pairedTriggerInstanceId == origid)
+                {
+                    return bro;
+                }
+            }
+            return null;
+        }
+            
         // It seems that VRCSDK2.VRC_Trigger destroy itself runtime on UnityEditor.
         // So copy its definition content to Val_Trigger.
-        public void SetupFrom(VRCSDK2.VRC_Trigger from)
+        private void SetupFrom(VRCSDK2.VRC_Trigger from)
         {
+            pairedTriggerInstanceId = from.GetInstanceID();
+
             vrcTrigger = new Val_Trigger(from);
 
             layerMask_OnEnterTrigger  = GetLayerMaskOf(VRCSDK2.VRC_Trigger.TriggerType.OnEnterTrigger);
@@ -55,14 +89,15 @@ namespace Iwsd
             }
         }
 
-        TimerExecuter timerExecuter;
+        private TimerExecuter timerExecuter;
 
         ////////////////////////////////////////////////////////////
         // Public interface
         
         void OnEnable()
         {
-            Iwlog.Trace(gameObject, "Emu_Trigger.OnEnable");
+            Iwlog.Trace(gameObject, "Emu_Trigger: OnEnable");
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnEnable);
 
             if (timerExecuter != null)
             {
@@ -83,7 +118,13 @@ namespace Iwsd
                 timerExecuter.Update();
             }
         }
-        
+
+        void OnDisable()
+        {
+            Iwlog.Trace(gameObject, "Emu_Trigger: OnDisable");
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnDisable);
+        }
+
         ////////////////////////////////////////
         // VRCSDK2.VRC_Trigger+TriggerType
 
@@ -95,7 +136,7 @@ namespace Iwsd
         }
 
         // Relay,
-        // OnEnable,
+        // x OnEnable, // See above. timer reset
         // x OnDestroy, // DestroyObject action
         // x OnSpawn, // SpawnObject action
         // OnNetworkReady,
@@ -190,7 +231,7 @@ namespace Iwsd
         // OnVideoEnd,
         // OnVideoPlay,
         // OnVideoPause,
-        // OnDisable,
+        // x OnDisable, // see above near OnEnable
         // OnOwnershipTransfer,
         // OnParticleCollision, // MonoBehaviour.OnParticleCollision
         void OnParticleCollision(GameObject other)
@@ -279,6 +320,12 @@ namespace Iwsd
 
         private IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> SearchTrigger_NoArg(VRCSDK2.VRC_Trigger.TriggerType triggerType)
         {
+            if (vrcTrigger == null)
+            {
+                Iwlog.Error(gameObject, "vrcTrigger == null");
+                return Enumerable.Empty<VRCSDK2.VRC_Trigger.TriggerEvent>();
+            }
+            
             var query = vrcTrigger.Triggers
                 .Where(x => (x.TriggerType == triggerType));
             return query;
@@ -623,7 +670,6 @@ namespace Iwsd
             foreach (var comp in newOne.GetComponentsInChildren<VRCSDK2.VRC_Trigger>(true))
             {
                 var emu_trigger = comp.gameObject.AddComponent<Emu_Trigger>();
-                emu_trigger.SetupFrom(comp);
             }
 
             foreach (var comp in newOne.GetComponentsInChildren<Emu_Trigger>(false))
@@ -640,14 +686,12 @@ namespace Iwsd
             // CHECK What happens if receiver is inactive?
 
             // I think MonoBehaviour.OnDestroy() is not good place to implement OnDestroy. So I placed here. 
-            // (When OnDestroy() called, it's almost unable to do any thing as trigger-action system)
+            // (When OnDestroy() called, it may possibly almost be unable to do any thing as trigger-action system)
             foreach (var comp in receiver.GetComponentsInChildren<Emu_Trigger>())
             {
                 if (comp.HasTriggerOf(VRCSDK2.VRC_Trigger.TriggerType.OnDestroy))
                 {
-                    // BUGREPRO 2018.3.3 doesn't run OnDestroy at all.
-                    // comp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnDestroy);
-                    Iwlog.Error(comp.gameObject, "Current client 2018.3.3 doesn't run OnDestroy at all. You can't use");
+                    comp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnDestroy);
                 }
             }
             
@@ -845,7 +889,7 @@ namespace Iwsd
             for (int i = 0; i < paramVals.Length; i++) {
                 paramTypes[i] = paramVals[i].GetType(); // FIXME need care for null? but how??
 
-                Iwlog.Debug(gameObject, " paramTypes[" + i + "]=" + paramTypes[i].FullName);
+                // Iwlog.Debug(gameObject, " paramTypes[" + i + "]=" + paramTypes[i].FullName);
             }
 
             var methodName = vrcEvent.ParameterString;
