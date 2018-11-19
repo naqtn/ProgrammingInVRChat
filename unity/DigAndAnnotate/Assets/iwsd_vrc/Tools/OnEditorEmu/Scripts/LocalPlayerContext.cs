@@ -142,6 +142,7 @@ namespace Iwsd
         // 
         public static void TeleportPlayer(Transform destination, bool alignRoomToDestination)
         {
+            // REFINE add calling GameObject to warning message
             // VR_FEATURE
             Iwlog.Warn("TeleportPlayer AlignRoomToDestination is not supported");
 

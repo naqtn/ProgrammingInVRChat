@@ -43,11 +43,13 @@
 - Pickup, UseDown, UseUp, Drop triggers
 - Timer
     - Compatibility is not checked because of defects of original implantation
+    - https://vrchat.canny.io/bug-reports/p/ontimer-doesnt-work-properly
 - Physics Collision
     - Both trigger and collider
     - OnParticleCollision
     - Slightly different than buggy original. Compatibility check is not completed.
-
+        - https://vrchat.canny.io/bug-reports/p/without-onentertrigger-onexittrigger-always-fires-individualy
+        - https://vrchat.canny.io/bug-reports/p/onexittrigger-wrongly-fired-if-different-layers-are-specified-in-onentertrigger-
 
 ## Not implemented
 

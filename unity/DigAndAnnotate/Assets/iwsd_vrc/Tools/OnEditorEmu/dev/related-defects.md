@@ -24,8 +24,8 @@ https://vrchat.canny.io/bug-reports/p/setmaterial-action-use-wrong-material-name
 ### Inactive child with VRC_Trigger in dynamic prefab crushes its prefab if an instance is destroyed
 https://vrchat.canny.io/bug-reports/p/inactive-child-with-vrctrigger-in-dynamic-prefab-crushes-its-prefab-if-an-instan
 
-### OnDestroy doesn't work at all
-
+### OnDestroy trigger does not work before second player joins the world instance
+https://vrchat.canny.io/bug-reports/p/ondestroy-trigger-does-not-work-before-second-player-joins-the-world-instance
 
 ---
 end

@@ -8,6 +8,17 @@ Items Need to investigate original specs.
 ### CHECK What happends if multiple VRC_Trigger compnent exists in case of original VRChat client?
 Simply they do them work independently?
 
+### Activate custom trigger infinite looping
+Make a testcase.
+
+### Execution order of OnSpawn and OnEnable
+
+
+## Action
+
+### Multiple locations for SpawnObject
+Make a testcase.
+
 
 ## Collision
 
