@@ -113,6 +113,8 @@ namespace Iwsd
 
         void Update()
         {
+            ExecuteTriggers_Key();
+            
             if (timerExecuter != null)
             {
                 timerExecuter.Update();
@@ -182,8 +184,8 @@ namespace Iwsd
             }
         }
         
-        // OnKeyDown,
-        // OnKeyUp,
+        // x OnKeyDown, // see Update method
+        // x OnKeyUp, // see Update method
         // x OnPickup, // from Player
         // x OnDrop, // from Player
         // x OnInteract, // from Player
@@ -231,7 +233,7 @@ namespace Iwsd
         // OnVideoEnd,
         // OnVideoPlay,
         // OnVideoPause,
-        // x OnDisable, // see above near OnEnable
+        // x OnDisable, // see OnDisable method
         // OnOwnershipTransfer,
         // OnParticleCollision, // MonoBehaviour.OnParticleCollision
         void OnParticleCollision(GameObject other)
@@ -272,6 +274,30 @@ namespace Iwsd
                 ExecuteTriggerActions(triggerDef);
             }
             return triggers.Count();
+        }
+
+        internal int ExecuteTriggers_Key()
+        {
+            // REFINE presearch related trigger definition. (Avoid searching for each frame)
+            int count = 0;
+            foreach (var triggerDef in SearchTrigger_NoArg(VRCSDK2.VRC_Trigger.TriggerType.OnKeyDown))
+            {
+                if (Input.GetKeyDown(triggerDef.Key))
+                {
+                    ExecuteTriggerActions(triggerDef);
+                    count++;
+                }
+            }
+
+            foreach (var triggerDef in SearchTrigger_NoArg(VRCSDK2.VRC_Trigger.TriggerType.OnKeyUp))
+            {
+                if (Input.GetKeyUp(triggerDef.Key))
+                {
+                    ExecuteTriggerActions(triggerDef);
+                    count++;
+                }
+            }
+            return count;
         }
 
         // private void EnsureHavingTrigger()
@@ -348,14 +374,14 @@ namespace Iwsd
                        && ((x.Layers.value & layerMask.value) != 0)
                        && ((x.TriggerIndividuals)? true: (count == 0)));
             
-            Iwlog.Debug("query.Count=" + query.Count());
+            Iwlog.Debug("Collision query.Count=" + query.Count());
             return query;
         }
 
         private IEnumerable<VRCSDK2.VRC_Trigger.TriggerEvent> SearchTrigger_Named(VRCSDK2.VRC_Trigger.TriggerType triggerType, string name)
         {
             var query = vrcTrigger.Triggers
-                .Where(x => (x.TriggerType == triggerType) && ((name == null) || (x.Name == name)));
+                .Where(x => (x.TriggerType == triggerType) && (x.Name == name));
 
             if (EmulatorSettings.ReportTriggersNotOneNamedMatch)
             {
@@ -375,6 +401,7 @@ namespace Iwsd
             return query;
         }
 
+        
         ////////////////////////////////////////
         // Execute TriggerEvent (i.e. a trigger definition)
 
@@ -669,7 +696,7 @@ namespace Iwsd
             // true: includeInactive
             foreach (var comp in newOne.GetComponentsInChildren<VRCSDK2.VRC_Trigger>(true))
             {
-                var emu_trigger = comp.gameObject.AddComponent<Emu_Trigger>();
+                comp.gameObject.AddComponent<Emu_Trigger>();
             }
 
             foreach (var comp in newOne.GetComponentsInChildren<Emu_Trigger>(false))

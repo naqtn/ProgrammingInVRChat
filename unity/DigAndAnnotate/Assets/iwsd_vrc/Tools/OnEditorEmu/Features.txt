@@ -50,6 +50,10 @@
     - Slightly different than buggy original. Compatibility check is not completed.
         - https://vrchat.canny.io/bug-reports/p/without-onentertrigger-onexittrigger-always-fires-individualy
         - https://vrchat.canny.io/bug-reports/p/onexittrigger-wrongly-fired-if-different-layers-are-specified-in-onentertrigger-
+- Life cycle (spawn, enable, disable, destroy)
+    - Compatibility test for OnDestroy is not completed because of defects of original implantation
+        - https://vrchat.canny.io/bug-reports/p/ondestroy-trigger-does-not-work-before-second-player-joins-the-world-instance
+- Key
 
 ## Not implemented
 
@@ -82,8 +86,6 @@
 ### Trigger-action system
 
 - Triggers
-    - Life cycle (spawn, enable disable, destroy)
-    - Key
     - OnAvatarHit
     - Relay
     - VRC component dependent trigger (OnVideoStart etc.)
