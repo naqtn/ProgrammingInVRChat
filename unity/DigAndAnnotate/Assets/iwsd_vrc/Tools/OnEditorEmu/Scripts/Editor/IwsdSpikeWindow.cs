@@ -38,6 +38,7 @@ public class IwsdSpikeWindow : EditorWindow
     void OnGUI ()
     {
 	EditorGUILayout.LabelField("IwsdSpikeWindow");
+	EditorGUILayout.LabelField(" For research SerializedProperty");
 
 	var active = Selection.activeGameObject;
 

@@ -65,6 +65,15 @@ namespace Iwsd
             MovePlayerOperation();
         }
 
+        
+        void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            foreach (var triggerComp in hit.gameObject.GetComponents<Emu_Trigger>())
+            {
+                triggerComp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnAvatarHit);
+            }
+        }
+
 
         ////////////////////////////////////////////////////////////
 

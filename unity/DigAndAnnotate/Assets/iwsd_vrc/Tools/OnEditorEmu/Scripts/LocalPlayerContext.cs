@@ -23,6 +23,7 @@ namespace Iwsd
             LocalPlayer = aPlayer;
         }
 
+        // FIXME move to EmulatorSettings
         private static string enableSimulator_key = "Iwsd.OnEditorEmu.EnableSimulator";
         public static bool EnableSimulator {
             #if UNITY_EDITOR
