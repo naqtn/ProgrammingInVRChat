@@ -64,6 +64,9 @@ VRCSDK2.VRC_EventHandler+VrcEvent
   int
     ParameterInt;
 
+  // maybe deprecated. replaced with ParameterObjects to be able multiple reciver handling
+  [UnityEngine.HideInInspector] public UnityEngine.GameObject ParameterObject;
+
   // action Recievers
   UnityEngine.GameObject[]
     ParameterObjects;
