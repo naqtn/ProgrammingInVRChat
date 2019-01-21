@@ -549,10 +549,19 @@ namespace Iwsd
 
         private IEnumerable<GameObject> GetRecievers(VRCSDK2.VRC_EventHandler.VrcEvent vrcEvent)
         {
-            var receivers = vrcEvent.ParameterObjects;
-            if (receivers.Length == 0) {
+            GameObject[] receivers = vrcEvent.ParameterObjects;
+
+            // For backward compatibility. "ParameterObject" is maybe deprecated old style
+            if ((vrcEvent.ParameterObject != null) && (receivers.Length == 0))
+            {
+                receivers = new [] {vrcEvent.ParameterObject};
+            }
+            
+            if (receivers.Length == 0)
+            {
                 receivers = new [] {this.gameObject};
             }
+
             return receivers.Where(x => x != null);
         }
 
@@ -579,6 +588,8 @@ namespace Iwsd
         // ParameterBoolOp : assign value
         private ActionResult Execute_SetGameObjectActive(GameObject receiver, VRCSDK2.VRC_EventHandler.VrcEvent vrcEvent)
         {
+            Iwlog.Debug(gameObject, "Execute_SetGameObjectActive");
+
             switch (vrcEvent.ParameterBoolOp) {
                 case VRCSDK2.VRC_EventHandler.VrcBooleanOp.False:
                     receiver.SetActive(false);
