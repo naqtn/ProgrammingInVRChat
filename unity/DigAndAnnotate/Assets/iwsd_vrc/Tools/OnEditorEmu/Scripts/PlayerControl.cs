@@ -110,15 +110,15 @@ namespace Iwsd
         }
 
         
-        // Toggle menu
+        // Toggle quick menu
         // "Cancel" is usually bind to ESC
-        // Alternative bind : LeftShift + C
-        // (In UnitEditor ESC activates cursor automatically. You can avoid this behavior by using alternative bind.)
+        // Alternative bind : Q
+        // (In UnitEditor ESC activates mouse cursor automatically. You can avoid this behavior by using alternative bind.)
         private void ToggleQuickMenuOperation()
         {
             if (Input.GetButtonUp("Cancel")
                 #if UNITY_EDITOR
-                || (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.C))
+                || Input.GetKeyDown(KeyCode.Q)
                 #endif
                 )
             {

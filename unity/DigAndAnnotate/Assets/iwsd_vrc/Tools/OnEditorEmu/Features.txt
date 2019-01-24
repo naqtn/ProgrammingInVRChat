@@ -14,11 +14,11 @@
     - player spawn position
 - Quick menu
     - (as world space canvas "diegetic UI")
-    - Toggle quick menu: ESC or LeftShift + C
-        - (Unity editor unlocks mouse cursor when recieve ESC key. LeftShift + C is for avoiding this behavior.)
+    - Toggle quick menu: ESC or Q
+        - (Unity editor unlocks mouse cursor when recieve ESC key. Q is for avoiding this behavior.)
     - Operations
         - Respawn
-        - Quit program
+        - Quit emulator program
 
 ### Trigger-action system
 
@@ -46,6 +46,7 @@
     - https://vrchat.canny.io/bug-reports/p/ontimer-doesnt-work-properly
 - Physics Collision
     - Both trigger and collider
+    - OnAvatarHit
     - OnParticleCollision
     - Slightly different than buggy original. Compatibility check is not completed.
         - https://vrchat.canny.io/bug-reports/p/without-onentertrigger-onexittrigger-always-fires-individualy
@@ -86,7 +87,6 @@
 ### Trigger-action system
 
 - Triggers
-    - OnAvatarHit
     - Relay
     - VRC component dependent trigger (OnVideoStart etc.)
 - Delay before action

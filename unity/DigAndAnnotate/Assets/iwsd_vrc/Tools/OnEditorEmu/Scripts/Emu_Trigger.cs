@@ -226,7 +226,7 @@ namespace Iwsd
         // OnDataStorageChange,
         // OnDataStorageRemove, // hidden
         // OnDataStorageAdd, // hidden
-        // OnAvatarHit,
+        // x OnAvatarHit, // see OnControllerColliderHit PlayerControl.cs
         // OnStationEntered,
         // OnStationExited,
         // OnVideoStart,
@@ -551,7 +551,7 @@ namespace Iwsd
         {
             GameObject[] receivers = vrcEvent.ParameterObjects;
 
-            // For backward compatibility. "ParameterObject" is maybe deprecated old style
+            // For backward compatibility. "ParameterObject" is maybe deprecated old style single reciever replaced with "ParameterObjects".
             if ((vrcEvent.ParameterObject != null) && (receivers.Length == 0))
             {
                 receivers = new [] {vrcEvent.ParameterObject};
