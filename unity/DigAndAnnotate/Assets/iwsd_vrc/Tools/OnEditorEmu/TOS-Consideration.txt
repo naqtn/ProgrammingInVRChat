@@ -1,0 +1,36 @@
+I (naqtn) believe:
+    - I don't violate VRChat TOS (Terms of Service) .
+    - Also emulator users will not.
+    - It does no harm for VRChat Inc. and VRChat community.
+
+For clarify, I asked VRChat Inc. whether there are problems for releasing this tool.
+I got an answer "nothing that you've described appears to violate our Terms of Service or Community Guidelines."
+
+Followings are my explanation of characteristics of this tool.
+---------------
+
+Basically, this tool consists of functionalities:
+    - Reading values set by world creator from VRChat components
+    - Player character input control (movement and interaction)
+    - Receive events from Unity (ex. OnCollisionEnter, Update)
+    - Evaluate events and values and do actions
+Original VRChat components are used only for reading values and doing actions via RPC method.
+Player character control and evaluation are implemented in this tool.
+
+
+(Besides VRChat SDK documents and testing to understand VRChat components functionality and specification),
+information using in the tool is got via usual methods in Unity editor environment. Concretely that methods are: 
+    - Unity Script Serialization (https://docs.unity3d.com/Manual/script-Serialization.html)
+    - C# reflection (https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/reflection)
+    - Unity Text-Based Scene Files (https://docs.unity3d.com/Manual/TextSceneFormat.html)
+I didn't decompile and/or modify original code.
+
+
+This tool is released as C# sorce code with prefabs format like other Unity editor extensions.
+Using editor extensions for VRChat contents development is already common. In this sense, this is not special one.
+
+
+This tool is depend on Unity editor environment and reads scene data like "source code".
+It is not a player program running solely and doesn't read world asset file like "binary code".
+If this tool is like the latter, it could be a basement for making fake client with malicious intent of someone.
+Actually, this tool is not like that.

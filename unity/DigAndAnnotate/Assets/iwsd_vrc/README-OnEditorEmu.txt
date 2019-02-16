@@ -1,10 +1,30 @@
 # OnEditorEmu: On Unity Editor VRChat Client Emulator
 
+
+## What's this?
+
+This is a VRChat client emulation tool working on Unity editor environment.
+It's aim is improving debugging process of VRChat world.
+You can debug VRChat worlds with Unity editor functionality.
+
+
+For example, to make complex gimmicks in a VRChat world, you may use Unity animation
+as timeline control and state machine and use Animation Events to trigger VRChat components.
+
+In such case, testing combination of Unity animations and VRChat components can not be done
+on Unity editor because VRChat components don't work on Unity editor.
+Checking animation internal state and trigger activation on VRChat client is stressful work.
+
+With this emulator, you can check animation state on Unity editor as usual Unity application development.
+(watching state change visually, inputting parameters manually, etc.)
+
+
+
 ## CAUTION (Backup your project!)
 
-This software is now at early alpha stage.
+This software is now at early stage.
 It might destroy your Unity project by implementation mistake.
-Don't use with serious project withdout backup.
+Don't use with serious projects withdout backup.
 
 
 ## How to use
