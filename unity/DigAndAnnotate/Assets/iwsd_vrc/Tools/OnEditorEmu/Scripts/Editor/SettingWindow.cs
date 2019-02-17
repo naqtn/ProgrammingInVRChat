@@ -34,18 +34,30 @@ namespace Iwsd
             EditorGUILayout.LabelField("Emulator Setting", new GUIStyle(){fontStyle = FontStyle.Bold});
 
             EditorGUILayout.BeginHorizontal();
-            LocalPlayerContext.EnableSimulator = EditorGUILayout.Toggle(" Enabled", LocalPlayerContext.EnableSimulator);
 
+            LocalPlayerContext.EnableSimulator = EditorGUILayout.Toggle(" Enabled", LocalPlayerContext.EnableSimulator);
             if (GUILayout.Button("Set enable and start"))
             {
                 LocalPlayerContext.EnableSimulator = true;
                 EditorApplication.isPlaying = true;
             }
-
             EditorGUILayout.Space();
             EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Modify Project Settings", new GUIStyle(){fontStyle = FontStyle.Bold});
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Adjust Fixed Timesteps to 90fps"))
+            {
+                // Thanks for https://twitter.com/momoma_creative/status/1073535358040588296
+                // default 0.02 = 1/50
+                Time.fixedDeltaTime = 1.0f / 90;
+            }
+            EditorGUILayout.Space();
+            EditorGUILayout.EndHorizontal();
+            
         }
-    
     }
 }
 

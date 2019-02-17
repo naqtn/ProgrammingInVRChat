@@ -50,6 +50,8 @@ Don't use with serious projects withdout backup.
 * You must diable "Enabled" checkbox in "Emulator Setting" befor publish your world using "Build Control Panel" of VRChat SDK.
     * (Or publish button starts this emulator in inconsistent way)
     * (This happens because both SDK publishing process and this emulator are implemented as "game" in Unity)
+* "Adjust Fixed Timesteps to 90fps" button is for physics behavior
+    * It changes Unity menu > Project Settings > Time > Fixed Timesteps value to 1/90
 
 
 ## Development Status Digest
