@@ -50,6 +50,8 @@ VRChat のコンポーネントは Unity エディタ上で動作しないため
 * VRChat SDK の "Build Control Panel" を使った publish 操作の前には、"Emulator Setting" の "Enabled" チェックボックスを無効化する必要があります。
     * （無効化しない場合、publish ボタンは不完全な状態でエミュレータを開始してしまいます）
     * （このようになるのは、SDK の publish 処理とこのエミュレータが共に Unity としては「ゲーム」として作成されているためです）
+* "Adjust Fixed Timesteps to 90fps" ボタンは、物理シミュレーションの振る舞いの互換をとるためのものです
+    * Unity メニュー > Project Settings > Time > Fixed Timesteps の値を 1/90 に変更します。
 
 
 ## 開発状況概要

@@ -13,9 +13,10 @@ as timeline control and state machine and use Animation Events to trigger VRChat
 
 In such case, testing combination of Unity animations and VRChat components can not be done
 on Unity editor because VRChat components don't work on Unity editor.
-Checking animation internal state and trigger activation on VRChat client is stressful work.
+You need to use VRChat client. But Checking animation internal state and trigger activation 
+on VRChat client is stressful work.
 
-With this emulator, you can check animation state on Unity editor as usual Unity application development.
+With this emulator, you can do this work on Unity editor as usual Unity application development.
 (watching state change visually, inputting parameters manually, etc.)
 
 
@@ -50,7 +51,7 @@ Don't use with serious projects withdout backup.
 * You must diable "Enabled" checkbox in "Emulator Setting" befor publish your world using "Build Control Panel" of VRChat SDK.
     * (Or publish button starts this emulator in inconsistent way)
     * (This happens because both SDK publishing process and this emulator are implemented as "game" in Unity)
-* "Adjust Fixed Timesteps to 90fps" button is for physics behavior
+* "Adjust Fixed Timesteps to 90fps" button is for physics behavior compatibility with original VRChat client
     * It changes Unity menu > Project Settings > Time > Fixed Timesteps value to 1/90
 
 
