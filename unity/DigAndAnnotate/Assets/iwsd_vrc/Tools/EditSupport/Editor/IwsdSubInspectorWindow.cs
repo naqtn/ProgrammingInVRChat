@@ -32,9 +32,12 @@ namespace Iwsd
         string lastMessageString;
         MessageType lastMessageType = MessageType.None;
         int lastInstanceId;
-
+        Vector2 scrollPosition = new Vector2(0, 0);
+        
         void OnGUI ()
         {
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            
             EditorGUILayout.LabelField("Iwsd Sub Inspector", new GUIStyle(){fontStyle = FontStyle.Bold});
             
             var active = Selection.activeGameObject;
@@ -44,7 +47,7 @@ namespace Iwsd
             }
 
             // CHECK ExecuteInEditMode attribute and Update
-            if ((active.GetInstanceID() != lastInstanceId) || CheckComponentAgreementChanged(active))
+            if ((active.GetInstanceID() != lastInstanceId) || CheckComponentAlignmentChanged(active))
             {
                 lastInstanceId = active.GetInstanceID();
                 lastMessageString = null;
@@ -53,6 +56,8 @@ namespace Iwsd
             }
         
             DrawGUI(active);
+
+            EditorGUILayout.EndScrollView();
         }
 
         private void DrawGUI(GameObject active)
@@ -93,27 +98,32 @@ namespace Iwsd
         // "Inspector"
         
         // Component to Editor map
-        static private Dictionary<Type, Type> EditorRegistry;
-        
+        // Key is full name of type string. It's not Type to support non public type (ex VRC_Panorama)
+        static private Dictionary<string, Type> EditorRegistry;
+    
         static IwsdSubInspectorWindow()
         {
-            EditorRegistry = new Dictionary<Type, Type>();
+            EditorRegistry = new Dictionary<string, Type>();
 
-            EditorRegistry.Add(typeof(UnityEngine.UI.Button), typeof(ButtonUnityEventOrderEditor));
-            EditorRegistry.Add(typeof(UnityEngine.UI.InputField), typeof(InputFieldUnityEventOrderEditor));
-            EditorRegistry.Add(typeof(VRCSDK2.VRC_Trigger), typeof(VRC_TriggerOrderEditor));
+            // TODO gather implementation classes via custom attributes
+            EditorRegistry.Add("UnityEngine.UI.Button", typeof(ButtonUnityEventOrderEditor));
+            EditorRegistry.Add("UnityEngine.UI.InputField", typeof(InputFieldUnityEventOrderEditor));
+            EditorRegistry.Add("VRCSDK2.VRC_Trigger", typeof(VRC_TriggerOrderEditor));
+            // EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaSimpleEditor));
+            EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaOrderEditor));
         }
 
         List<int> ComponentIds = new List<int>();
         List<Editor> EditorInstances = new List<Editor>();
 
-        private bool CheckComponentAgreementChanged(GameObject anObject)
+        private bool CheckComponentAlignmentChanged(GameObject anObject)
         {
             int idx = 0;
             foreach (var compObj in anObject.GetComponents<Component>())
             {
                 var compType = compObj.GetType();
-                if (EditorRegistry.ContainsKey(compType))
+
+                if (EditorRegistry.ContainsKey(compType.FullName))
                 {
                     // for each supported component
                     if ((ComponentIds.Count <= idx ) || (ComponentIds[idx++] != compObj.GetInstanceID()))
@@ -137,19 +147,19 @@ namespace Iwsd
             
             foreach (var compObj in anObject.GetComponents<Component>())
             {
-                var compType = compObj.GetType();
-                if (EditorRegistry.ContainsKey(compType))
+                var compTypeName = compObj.GetType().FullName;
+                if (EditorRegistry.ContainsKey(compTypeName))
                 {
-                    InstantiateIwsdEditor(compType, compObj);
+                    InstantiateIwsdEditor(compTypeName, compObj);
                     ComponentIds.Add(compObj.GetInstanceID());
                 }
             }
             
         }
 
-        private void InstantiateIwsdEditor(Type compType, Component compObj)
+        private void InstantiateIwsdEditor(string compTypeName, Component compObj)
         {
-            Type editorType = EditorRegistry[compType];
+            Type editorType = EditorRegistry[compTypeName];
 
             // ScriptableObject instance = ScriptableObject.CreateInstance(editorType);
             // MEMO CreateInstance calls OnEnable on instantiation.
@@ -170,8 +180,7 @@ namespace Iwsd
                 return;
             }
                 
-            // Editor theEditor = instance as Editor;
-            Editor theEditor = (Editor)instance;
+            Editor theEditor = instance as Editor;
             if (theEditor == null)
             {
                 Debug.LogError("Invalid editor class registration. type=" + editorType + ", type of instance=" + instance.GetType());
@@ -223,24 +232,26 @@ namespace Iwsd
             }
         }
 
+        private string targetTypeName;
+        private string headerString;
+        
         // This is internal and not compatible with UnityEditor.Editor
         internal void Initialize(UnityEngine.Object targetComponent)
         {
             _serializedObject = new SerializedObject(targetComponent);
+            targetTypeName = targetComponent.GetType().Name;
+            headerString = targetTypeName + " (" + this.GetType() + ")";
         }
 
-        private string MyName;
         public virtual void OnInspectorGUI()
         {
-            if (MyName == null)
-            {
-                MyName = "(Editor " + this.GetType() + " default OnInspectorGUI)";
-            }
-            EditorGUILayout.LabelField(MyName);
+            EditorGUILayout.LabelField(headerString, new GUIStyle(){fontStyle = FontStyle.Bold});
         }
     }
 
 
+
+    
     ////////////////////////////////////////////////////////////
     // Editor implementations
 
@@ -259,6 +270,8 @@ namespace Iwsd
             
         public override void OnInspectorGUI()
         {
+            base.OnInspectorGUI();
+
             serializedObject.Update();
             reorderableList.DoLayoutList();
             serializedObject.ApplyModifiedProperties();
@@ -502,4 +515,112 @@ namespace Iwsd
     //     m_TypeName: UnityEngine.UI.InputField+OnChangeEvent, UnityEngine.UI, Version=1.0.0.0,
     //       Culture=neutral, PublicKeyToken=null
 
+
+    
+    /**
+     * Editor for VRCSDK2.scripts.Scenes.VRC_Panorama
+     */
+    class VRC_PanoramaSimpleEditor : Iwsd.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+             
+            serializedObject.Update();
+            
+            EditorGUI.indentLevel++;
+            panoramasGUI(serializedObject.FindProperty("panoramas"));
+            EditorGUI.indentLevel--;
+                
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        void panoramasGUI(SerializedProperty panoramas)
+        {
+            EditorGUILayout.LabelField("count of panoramas:" + panoramas.arraySize);
+
+            for (int idx = 0; idx < panoramas.arraySize; idx++)
+            {
+                // VRCSDK2.scripts.Scenes.VRC_Panorama+PanoSpec
+                var panoSpec = panoramas.GetArrayElementAtIndex(idx);
+
+                // SerializedProperty of string
+                var url = panoSpec.FindPropertyRelative("url");
+                // SerializedProperty of PPtr<$Texture2D>
+                var texture = panoSpec.FindPropertyRelative("texture");
+                
+                EditorGUILayout.LabelField(idx + ":");
+                url.stringValue = EditorGUILayout.TextField("URL:", url.stringValue);
+                EditorGUILayout.PropertyField(texture, new GUIContent("texture"));
+            }
+        }
+        
+    }
+
+
+    /**
+     * Yet another Editor for VRCSDK2.scripts.Scenes.VRC_Panorama
+     */
+    class VRC_PanoramaOrderEditor : Iwsd.Editor
+    {
+
+        ReorderableList reorderableList;
+        int texDispSize = 40;
+        int paddingSize = 3;
+        
+        public void OnDisable()
+        {
+            reorderableList = null;
+        }
+            
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+
+            serializedObject.Update();
+
+            var renderer = serializedObject.FindProperty("renderer");
+            EditorGUILayout.PropertyField(renderer, new GUIContent("renderer"));
+
+            reorderableList.DoLayoutList();
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        public void OnEnable()
+        {
+            var panoramas = serializedObject.FindProperty("panoramas");
+            reorderableList = new ReorderableList(serializedObject, panoramas);
+            reorderableList.drawHeaderCallback = (rect) => EditorGUI.LabelField (rect, "panoramas");
+            reorderableList.elementHeight = paddingSize + EditorGUIUtility.singleLineHeight + texDispSize + paddingSize;
+            reorderableList.drawElementCallback = (rect, index, isActive, isFocused) => {
+                // VRCSDK2.scripts.Scenes.VRC_Panorama+PanoSpec
+                var panoSpec = panoramas.GetArrayElementAtIndex(index);
+                DrawPeoperty(rect, panoSpec, index);
+            };
+        }
+
+        // PropertyDrawer.OnGUI like interface
+        private void DrawPeoperty(Rect position, SerializedProperty panoSpec, int index)
+        {
+            var url = panoSpec.FindPropertyRelative("url");
+            var texture = panoSpec.FindPropertyRelative("texture");
+
+            // index + url
+            var rect = new Rect (position) {
+                y = position.y + paddingSize,
+                height = EditorGUIUtility.singleLineHeight
+            };
+            url.stringValue = EditorGUI.TextField(rect, new GUIContent(index + " URL"), url.stringValue);
+
+            // texture
+            rect.y += paddingSize + rect.height;
+            rect.height = texDispSize;
+            texture.objectReferenceValue =
+                EditorGUI.ObjectField(rect, new GUIContent("texture"), texture.objectReferenceValue, typeof(Texture2D), false);
+
+            // (another simple way)
+            // EditorGUI.PropertyField(rect, texture, new GUIContent("texture"));
+        }
+    }
+    
 }
