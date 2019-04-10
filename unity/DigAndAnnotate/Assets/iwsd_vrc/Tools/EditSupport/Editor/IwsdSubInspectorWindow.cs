@@ -36,16 +36,16 @@ namespace Iwsd
         
         void OnGUI ()
         {
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-            
-            EditorGUILayout.LabelField("Iwsd Sub Inspector", new GUIStyle(){fontStyle = FontStyle.Bold});
-            
             var active = Selection.activeGameObject;
             if (active == null)
             {
                 return;
             }
 
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+
+            EditorGUILayout.LabelField("Iwsd Sub Inspector", new GUIStyle(){fontStyle = FontStyle.Bold});
+            
             // CHECK ExecuteInEditMode attribute and Update
             if ((active.GetInstanceID() != lastInstanceId) || CheckComponentAlignmentChanged(active))
             {
