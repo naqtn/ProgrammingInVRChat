@@ -4,7 +4,7 @@ REM VRChat "alternative launch.bat" with VR or Desktop mode selection feature
 REM
 REM Ordinary launch.bat is installed by VRChat.
 REM It is used to launch VRChat client from Web browser to get in specific world.
-REM This alternative "launch.bat" additionally provides mode selection befor starting VRChat.
+REM This alternative "launch.bat" additionally provides mode selection before starting VRChat.
 REM 
 REM INSTALL:
 REM 1. Open steam client, and show VRChat 
