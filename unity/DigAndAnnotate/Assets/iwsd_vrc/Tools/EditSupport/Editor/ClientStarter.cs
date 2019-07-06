@@ -52,7 +52,6 @@ using System.Text.RegularExpressions;
  * If you have defect reports or feature requests, please post to GitHub issue (https://github.com/naqtn/ProgrammingInVRChat/issues)
  *
  *
- * TODO Add non-VR selection feature (need directly starting client instead of Application.OpenURL())
  * IDEA hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need? Polling is not good)
  * IDEA show URL as copyable string (need?)
  * IDEA preserve nonce and instance number and reasonably refresh.  (need?)
@@ -95,6 +94,13 @@ namespace Iwsd
                     = EditorGUILayout.Toggle(new GUIContent("Start Like As SDK ",
                                                             "If on, SDK setting 'Installed Client Path' is used. If off, start like as Web browser does"),
                                              settings.startLikeAsSDK);
+                GUI.enabled = settings.startLikeAsSDK;
+                EditorGUI.indentLevel++;
+                settings.useNoVrOption
+                    = EditorGUILayout.Toggle(new GUIContent("Desktop mode", "Start client in desktop mode. (use --no-vr option)"),
+                                             settings.useNoVrOption);
+                EditorGUI.indentLevel--;
+                GUI.enabled = true;
             }
             settings.worldAccessLevel1 = (ClientStarter.WorldAccessLevel)
                 EditorGUILayout.EnumPopup("Access", settings.worldAccessLevel1);
@@ -200,12 +206,14 @@ namespace Iwsd
         {
             public bool startAfterPublished;
             public bool startLikeAsSDK;
+            public bool useNoVrOption;
             public WorldAccessLevel worldAccessLevel1;
             public WorldAccessLevel worldAccessLevel2;
 
 
             private const string startAfterPublished_key = "Iwsd.ClientStarter.startAfterPublished";
             private const string startLikeAsSDK_key      = "Iwsd.ClientStarter.startLikeAsSDK";
+            private const string useNoVrOption_key       = "Iwsd.ClientStarter.useNoVrOption";
             private const string worldAccessLevel1_key   = "Iwsd.ClientStarter.worldAccessLevel1";
             private const string worldAccessLevel2_key   = "Iwsd.ClientStarter.worldAccessLevel2";
 
@@ -214,6 +222,7 @@ namespace Iwsd
                 var o = new Settings();
                 o.startAfterPublished = EditorPrefs.GetBool(startAfterPublished_key, true);
                 o.startLikeAsSDK = EditorPrefs.GetBool(startLikeAsSDK_key, true);
+                o.useNoVrOption = EditorPrefs.GetBool(useNoVrOption_key, true);
                 o.worldAccessLevel1 = (WorldAccessLevel)EditorPrefs.GetInt(worldAccessLevel1_key, (int)WorldAccessLevel.Friends);
                 o.worldAccessLevel2 = (WorldAccessLevel)EditorPrefs.GetInt(worldAccessLevel2_key, (int)WorldAccessLevel.Friends);
                 return o;
@@ -223,6 +232,7 @@ namespace Iwsd
             {
                 EditorPrefs.SetBool(startAfterPublished_key, this.startAfterPublished);
                 EditorPrefs.SetBool(startLikeAsSDK_key, this.startLikeAsSDK);
+                EditorPrefs.SetBool(useNoVrOption_key, this.useNoVrOption);
                 EditorPrefs.GetInt(worldAccessLevel1_key, (int)this.worldAccessLevel1);
                 EditorPrefs.GetInt(worldAccessLevel2_key, (int)this.worldAccessLevel2);
             }
@@ -364,14 +374,24 @@ namespace Iwsd
             var path = ExtractClientPath(url);
             var clientPath = path.Value;
 
-            Debug.Log("will Start path='"+ clientPath + "', url='" + url.Value + "'");
+            var args = "\"" + url.Value + "\"";
+            if (settings.useNoVrOption)
+            {
+                args = "\"--no-vr\" " + args;
+            }
+
+            Debug.Log("will Start path='"+ clientPath + "', args='" + args + "'");
 
             try
             {
                 using (var proc = new System.Diagnostics.Process())
                 {
+                    var wdir = System.IO.Path.GetDirectoryName(clientPath);
+                    
                     proc.StartInfo.FileName = clientPath;
-                    proc.StartInfo.Arguments = url.Value;
+                    proc.StartInfo.Arguments = args;
+                    proc.StartInfo.WorkingDirectory = wdir;
+                    proc.StartInfo.UseShellExecute = true;
                     proc.Start();
                 }
             }
