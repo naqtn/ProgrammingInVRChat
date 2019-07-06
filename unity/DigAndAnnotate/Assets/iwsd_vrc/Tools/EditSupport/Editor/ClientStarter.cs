@@ -87,9 +87,15 @@ namespace Iwsd
             /// Settings
             EditorGUI.BeginChangeCheck();
             settings.startAfterPublished
-                = EditorGUILayout.Toggle(new GUIContent("Auto Start", "Start client after publish completed"),
+                = EditorGUILayout.Toggle(new GUIContent("Start After Publish", "Start client automatically after publish completed"),
                                          settings.startAfterPublished);
-
+            if (moreOptions)
+            {
+                settings.startLikeAsSDK
+                    = EditorGUILayout.Toggle(new GUIContent("Start Like As SDK ",
+                                                            "If on, SDK setting 'Installed Client Path' is used. If off, start like as Web browser does"),
+                                             settings.startLikeAsSDK);
+            }
             settings.worldAccessLevel1 = (ClientStarter.WorldAccessLevel)
                 EditorGUILayout.EnumPopup("Access", settings.worldAccessLevel1);
 
@@ -112,7 +118,7 @@ namespace Iwsd
             /// Operation buttons
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Operations");
-            if (GUILayout.Button("Start Client",  GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button("Start Published World",  GUILayout.ExpandWidth(false)))
             {
                 var r = ClientStarter.TryToOpenLaunchURL(null, settings.worldAccessLevel1);
                 ClientStarter.lastResult = r;
@@ -150,7 +156,7 @@ namespace Iwsd
                 /// Operation buttons 2
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PrefixLabel("Operations");
-                if (GUILayout.Button("Start Client",  GUILayout.ExpandWidth(false)))
+                if (GUILayout.Button("Start Published World",  GUILayout.ExpandWidth(false)))
                 {
                     result2 = ClientStarter.TryToOpenLaunchURL(manualInputId, settings.worldAccessLevel2);
                 }
@@ -193,18 +199,21 @@ namespace Iwsd
         public class Settings
         {
             public bool startAfterPublished;
+            public bool startLikeAsSDK;
             public WorldAccessLevel worldAccessLevel1;
             public WorldAccessLevel worldAccessLevel2;
 
 
             private const string startAfterPublished_key = "Iwsd.ClientStarter.startAfterPublished";
-            private const string worldAccessLevel1_key = "Iwsd.ClientStarter.worldAccessLevel1";
-            private const string worldAccessLevel2_key = "Iwsd.ClientStarter.worldAccessLevel2";
+            private const string startLikeAsSDK_key      = "Iwsd.ClientStarter.startLikeAsSDK";
+            private const string worldAccessLevel1_key   = "Iwsd.ClientStarter.worldAccessLevel1";
+            private const string worldAccessLevel2_key   = "Iwsd.ClientStarter.worldAccessLevel2";
 
             internal static Settings Load()
             {
                 var o = new Settings();
                 o.startAfterPublished = EditorPrefs.GetBool(startAfterPublished_key, true);
+                o.startLikeAsSDK = EditorPrefs.GetBool(startLikeAsSDK_key, true);
                 o.worldAccessLevel1 = (WorldAccessLevel)EditorPrefs.GetInt(worldAccessLevel1_key, (int)WorldAccessLevel.Friends);
                 o.worldAccessLevel2 = (WorldAccessLevel)EditorPrefs.GetInt(worldAccessLevel2_key, (int)WorldAccessLevel.Friends);
                 return o;
@@ -213,11 +222,19 @@ namespace Iwsd
             internal void Store()
             {
                 EditorPrefs.SetBool(startAfterPublished_key, this.startAfterPublished);
+                EditorPrefs.SetBool(startLikeAsSDK_key, this.startLikeAsSDK);
                 EditorPrefs.GetInt(worldAccessLevel1_key, (int)this.worldAccessLevel1);
                 EditorPrefs.GetInt(worldAccessLevel2_key, (int)this.worldAccessLevel2);
             }
         }
 
+        /**
+         * Process rusult value object
+         *
+         * This is used for not only total result but also partial result,
+         * such as getting URL string.
+         * So the meaning of Value property vary as processing goes by.
+         */
         public class Result {
             public bool IsSucceeded;
             public string Value;
@@ -301,6 +318,71 @@ namespace Iwsd
         ////////////////////////////////////////////////////////////
         // Do start actions
 
+        private static Result GetVRChatInstalledPath()
+        {
+            using (var registryKey
+                   = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 438100"))
+            {
+                if (registryKey != null)
+                {
+                    var val = registryKey.GetValue("InstallLocation").ToString();
+                    registryKey.Close();
+                    return new Result(null, true, val);
+                }
+            }
+            return new Result(null, false, "Error. (Fail to open registry)");
+        }
+
+        private static Result ExtractClientPath(Result url)
+        {
+            var clientPath = EditorPrefs.GetString("VRC_installedClientPath", "");
+            if (clientPath == "")
+            {
+                return new Result(url, false, "Couldn't get installed client path. (Please check 'Client Path' in 'VRChat Setting')");
+            }
+            else if (clientPath.StartsWith(@"\"))
+            {
+                var r = GetVRChatInstalledPath();
+                if (!r.IsSucceeded)
+                {
+                    return r;
+                }
+                clientPath = r.Value + clientPath;
+            }
+
+            return new Result(url, true, clientPath);
+        }
+                    
+        private static Result TryToStart(Result url)
+        {
+            if (!url.IsSucceeded)
+            {
+                Debug.LogWarning(url.Value);
+                return url;
+            }
+            
+            var path = ExtractClientPath(url);
+            var clientPath = path.Value;
+
+            Debug.Log("will Start path='"+ clientPath + "', url='" + url.Value + "'");
+
+            try
+            {
+                using (var proc = new System.Diagnostics.Process())
+                {
+                    proc.StartInfo.FileName = clientPath;
+                    proc.StartInfo.Arguments = url.Value;
+                    proc.Start();
+                }
+            }
+            catch (Exception e)
+            {
+                return new Result(url, false, "Couldn't execute process properly. (Please check 'Client Path' in 'VRChat Setting')");
+            }
+
+            return url;
+        }
+        
         private static Result TryToOpen(Result url)
         {
             if (url.IsSucceeded)
@@ -324,7 +406,8 @@ namespace Iwsd
 
         public static Result TryToOpenLaunchURL(string id_opt, WorldAccessLevel accessLevel)
         {
-            return TryToOpen(ComposeLaunchURL(id_opt, accessLevel));
+            var url = ComposeLaunchURL(id_opt, accessLevel);
+            return (settings.startLikeAsSDK)? TryToStart(url): TryToOpen(url);
         }
 
 
@@ -346,7 +429,7 @@ namespace Iwsd
                 }
                 else
                 {
-                    var r = new Result(null, false, "it's not world ID string (wrong format)");
+                    var r = new Result(null, false, "It's not a world ID string (wrong format)");
                     return r;  
                 }
             }
