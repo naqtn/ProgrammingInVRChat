@@ -27,7 +27,7 @@
 using UnityEngine;
 using UnityEditor;
 using System;
-    
+
 /**
  * VRChat Client Starter
  *
@@ -51,12 +51,12 @@ using System;
  * If you have defect reports or feature requests, please post to GitHub issue (https://github.com/naqtn/ProgrammingInVRChat/issues)
  *
  *
- * TODO hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need?)
- * TODO show URL as copyable string (need?)
- * TODO preserve nonce and instance number and reasonably refresh, to meet players by multiple invoke
  * TODO Add non-VR selection feature (need directly starting client instead of Application.OpenURL())
+ *
+ * IDEA hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need? Polling is not good)
+ * IDEA show URL as copyable string (need?)
+ * IDEA preserve nonce and instance number and reasonably refresh.  (need?)
  * TODO validate inputed ID string (cut from tail to be good if public URL, or use regex)
- * BUG no need to be logged for public access instance
  */
 namespace Iwsd
 {
@@ -74,7 +74,7 @@ namespace Iwsd
         // "wrld_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         string manualInputId = "(input world ID: wrld_xxx...)"; // I choiced not to be saved
         ClientStarter.Result result2 = new ClientStarter.Result(null, true, "");
-            
+
         void OnGUI ()
         {
             var settings = ClientStarter.settings;
@@ -85,7 +85,7 @@ namespace Iwsd
             EditorGUILayout.LabelField("VRChat Client Starter", new GUIStyle(){fontStyle = FontStyle.Bold});
             moreOptions = EditorGUILayout.ToggleLeft("more options", moreOptions);
             EditorGUILayout.EndHorizontal();
-                           
+
             /// Settings
             EditorGUI.BeginChangeCheck();
             settings.startAfterPublished
@@ -110,7 +110,7 @@ namespace Iwsd
                 EditorGUI.SelectableLabel(rect, result1.blueprintId);
                 // EditorGUILayout.TextField("World ID (read only)", result.blueprintId);
             }
-            
+
             /// Operation buttons
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Operations");
@@ -179,7 +179,7 @@ namespace Iwsd
 
     [InitializeOnLoad]
     public class ClientStarter {
-        
+
         ////////////////////////////////////////////////////////////
         // sub structures
 
@@ -198,7 +198,7 @@ namespace Iwsd
             public WorldAccessLevel worldAccessLevel1;
             public WorldAccessLevel worldAccessLevel2;
 
-    
+
             private const string startAfterPublished_key = "Iwsd.ClientStarter.startAfterPublished";
             private const string worldAccessLevel1_key = "Iwsd.ClientStarter.worldAccessLevel1";
             private const string worldAccessLevel2_key = "Iwsd.ClientStarter.worldAccessLevel2";
@@ -211,7 +211,7 @@ namespace Iwsd
                 o.worldAccessLevel2 = (WorldAccessLevel)EditorPrefs.GetInt(worldAccessLevel2_key, (int)WorldAccessLevel.Friends);
                 return o;
             }
-            
+
             internal void Store()
             {
                 EditorPrefs.SetBool(startAfterPublished_key, this.startAfterPublished);
@@ -224,7 +224,7 @@ namespace Iwsd
             public bool IsSucceeded;
             public string Value;
             public string blueprintId;
-            
+
             public Result(Result result, bool isSucceeded, string value)
             {
                 IsSucceeded = isSucceeded;
@@ -235,10 +235,10 @@ namespace Iwsd
 
         ////////////////////////////////////////////////////////////
         // Auto start handling
-        
+
         static public Settings settings;
         static public Result lastResult;
-        
+
         static ClientStarter()
         {
             lastResult = new Result(null, true, "");
@@ -267,7 +267,7 @@ namespace Iwsd
 
         private static void PublishPolling()
         {
-            // Avoid calling FindObjectsOfTypeAll so often, to reduce CPU load 
+            // Avoid calling FindObjectsOfTypeAll so often, to reduce CPU load
             if ((CHECK_TRIAL_LIMIT < trialCount) || (++callCount % CHECK_CYCLE_ONUPDATE != 0))
             {
                 return;
@@ -281,7 +281,7 @@ namespace Iwsd
             {
                 return;
             }
-                                   
+
             // Currently (VRCSDK-2019.06.25.21.13_Public) ContentUploadedDialog :
             // * appears after publish
             // * is used for world publishing only
@@ -302,7 +302,7 @@ namespace Iwsd
 
         ////////////////////////////////////////////////////////////
         // Do start actions
-        
+
         private static Result TryToOpen(Result url)
         {
             if (url.IsSucceeded)
@@ -334,11 +334,11 @@ namespace Iwsd
             if (id_opt != null)
             {
                 var r = new Result(null, true, "");
-                // TODO validate id_opt 
+                // TODO validate id_opt
                 r.blueprintId = id_opt;
                 return r;
             }
-            
+
             var vrcPipelineManager = Resources.FindObjectsOfTypeAll(typeof(VRC.Core.VRCPipelineManager)) as VRC.Core.VRCPipelineManager[];
             foreach (var pm in vrcPipelineManager)
             {
@@ -360,10 +360,12 @@ namespace Iwsd
             }
             return new Result(null, false, "VRC_SceneDescriptor is missing? (vrcPipelineManager.Length=" + vrcPipelineManager.Length + ")");
         }
-        
+
 
         public static Result ComposeLaunchURL(string id_opt, WorldAccessLevel accessLevel)
         {
+            var access = accessStringOf(accessLevel);
+
             var bid = ExtractSceneBlueprintId(id_opt);
             if (!bid.IsSucceeded)
             {
@@ -371,26 +373,9 @@ namespace Iwsd
             }
             var blueprintId = bid.blueprintId;
 
-            if (!VRC.Core.APIUser.IsLoggedInWithCredentials)
-            {
-                return new Result(bid, false, "Not logged in. (Open 'VRChat SDK/Settings to check and try again' )");
-            }
-
-            var user = VRC.Core.APIUser.CurrentUser;
-            if (user == null)
-            {
-                return new Result(bid, false, "user == null");
-            }
-            var userid = user.id;
-            if (userid == null)
-            {
-                return new Result(bid, false, "user.id == null");
-            }
-
             var nonce = Guid.NewGuid();
             var instno = new System.Random().Next(1000, 9000);
 
-            var access = accessStringOf(accessLevel);
 
             // NOTE 'ref' should be other value. But API is not documented.
             //  "vrchat://launch?ref=vrchat.com&id={blueprintId}:{instno}~{access}({userid})~nonce({nonce}){option}";
@@ -398,10 +383,28 @@ namespace Iwsd
             var url = "vrchat://launch?ref=vrchat.com&id=" + blueprintId + ":" + instno;
             if (accessLevel != WorldAccessLevel.Public)
             {
+                if (!VRC.Core.APIUser.IsLoggedInWithCredentials)
+                {
+                    return new Result(bid, false, "Not logged in. (Open 'VRChat SDK/Settings to check and try again' )");
+                }
+
+                var user = VRC.Core.APIUser.CurrentUser;
+                if (user == null)
+                {
+                    return new Result(bid, false, "user == null");
+                }
+                var userid = user.id;
+                if (userid == null)
+                {
+                    return new Result(bid, false, "user.id == null");
+                }
+
+                // add more
                 url += "~" + access + "("+ userid + ")~nonce(" + nonce + ")";
 
                 if (accessLevel == WorldAccessLevel.InvitePlus)
                 {
+                    // add more
                     url += "~canRequestInvite";
                 }
             }
