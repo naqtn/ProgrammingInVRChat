@@ -27,7 +27,8 @@
 using UnityEngine;
 using UnityEditor;
 using System;
-
+using System.Text.RegularExpressions;
+    
 /**
  * VRChat Client Starter
  *
@@ -52,11 +53,9 @@ using System;
  *
  *
  * TODO Add non-VR selection feature (need directly starting client instead of Application.OpenURL())
- *
  * IDEA hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need? Polling is not good)
  * IDEA show URL as copyable string (need?)
  * IDEA preserve nonce and instance number and reasonably refresh.  (need?)
- * TODO validate inputed ID string (cut from tail to be good if public URL, or use regex)
  */
 namespace Iwsd
 {
@@ -71,7 +70,6 @@ namespace Iwsd
         }
 
         bool moreOptions = false;
-        // "wrld_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         string manualInputId = "(input world ID: wrld_xxx...)"; // I choiced not to be saved
         ClientStarter.Result result2 = new ClientStarter.Result(null, true, "");
 
@@ -329,14 +327,28 @@ namespace Iwsd
             return TryToOpen(ComposeLaunchURL(id_opt, accessLevel));
         }
 
+
+        // "wrld_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        // VRChat use lowercase only
+        private static Regex worldIdRex
+            = new Regex("wrld_[0-9a-f]{8}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{12}");
+        
         public static Result ExtractSceneBlueprintId(string id_opt)
         {
             if (id_opt != null)
             {
-                var r = new Result(null, true, "");
-                // TODO validate id_opt
-                r.blueprintId = id_opt;
-                return r;
+                var match = worldIdRex.Match(id_opt);
+                if (match.Success)
+                {
+                    var r = new Result(null, true, "");
+                    r.blueprintId = match.Value;
+                    return r;
+                }
+                else
+                {
+                    var r = new Result(null, false, "it's not world ID string (wrong format)");
+                    return r;  
+                }
             }
 
             var vrcPipelineManager = Resources.FindObjectsOfTypeAll(typeof(VRC.Core.VRCPipelineManager)) as VRC.Core.VRCPipelineManager[];
