@@ -50,110 +50,184 @@ using System;
  * If you have defect reports or feature requests, please post to GitHub issue (https://github.com/naqtn/ProgrammingInVRChat/issues)
  *
  *
- * TODO Save options persistently & let it work even if setting window doesn't opened
- * TODO check what happens avatar publishing, avatar scene case
- * TODO hide "not logged in" warning when IsLoggedInWithCredentials becomes true
- * TODO When ContentUploadedDialog opend and this toggle turn on, close dialog and suppress starting client (Better update hook will solve this issue naturally)
- * TODO Better polling (only just few seconds after play ends)
+ * TODO hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need?)
  * TODO show URL as copyable string (need?)
+ * TODO show world id as copyable string (need?)
  * TODO preserve nonce and instance number and reasonably refresh, to meet players by multiple invoke
- * TODO Show warnings HelpBox for open manage operation too.
+ * TODO add advanced option section to hide options that is not used so often like above (copyable string, nonce...).
  * TODO Add non-VR selection feature (need directly starting client instead of Application.OpenURL())
+ * TODO Add TextField for world id and manually open it (need?)
  */
 namespace Iwsd
 {
 
-    public enum WorldAccessLevel
+    public class ClientStarterWindow : EditorWindow
     {
-        Public,      // access "", omit tailing ~ section
-        FriendsPlus, // access "hidden"
-        Friends,     // access "friends"
-        InvitePlus,  // access "private", at last "~canRequestInvite"
-        Invite,      // access "private"
-    }
 
-    public class ClientStarter : EditorWindow
-    {
         [MenuItem("Window/VRC_Iwsd/Client Starter")]
-        static void OpenClientStarter()
+        static void OpenClientStarterWindow()
         {
-            EditorWindow.GetWindow<ClientStarter>("VRC Client");
+            EditorWindow.GetWindow<ClientStarterWindow>("VRC Client");
         }
 
-        public bool startAfterPublished = true;
-
-        public WorldAccessLevel worldAccessLevel = WorldAccessLevel.Friends;
-
-        private ComposeResult lastLaunch = new ComposeResult(true, "");
+        void OnEnable()
+        {
+        }
 
         void OnGUI ()
         {
+            var settings = ClientStarter.settings;
+
             //// Label
             EditorGUILayout.LabelField("VRChat Client Starter", new GUIStyle(){fontStyle = FontStyle.Bold});
 
             //// Settings
-            startAfterPublished = EditorGUILayout.Toggle(new GUIContent("Auto Start", "Start client after publish completed"),
-                                                         startAfterPublished);
-            worldAccessLevel = (WorldAccessLevel)EditorGUILayout.EnumPopup("Access", worldAccessLevel);
-
+            EditorGUI.BeginChangeCheck();
+            settings.startAfterPublished
+                = EditorGUILayout.Toggle(new GUIContent("Auto Start", "Start client after publish completed"),
+                                         settings.startAfterPublished);
+            settings.worldAccessLevel
+                = (ClientStarter.WorldAccessLevel) EditorGUILayout.EnumPopup("Access",
+                                                                                    settings.worldAccessLevel);
+            if (EditorGUI.EndChangeCheck()) {
+                settings.Store();
+            }
 
             //// Operation buttons
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Operations");
             if (GUILayout.Button("Start Now"))
             {
-                lastLaunch = TryToOpenLaunchURL(worldAccessLevel);
+                ClientStarter.TryToOpenLaunchURL(settings.worldAccessLevel);
             }
             if (GUILayout.Button("Open Manage Page"))
             {
-                TryToOpenManageURL();
+                ClientStarter.TryToOpenManageURL();
             }
             EditorGUILayout.Space();
             EditorGUILayout.EndHorizontal();
 
 
             //// Info
-            if (!lastLaunch.IsSucceeded)
+            var result = ClientStarter.lastResult;
+            if (!result.IsSucceeded)
             {
-                EditorGUILayout.HelpBox(lastLaunch.Result, MessageType.Warning);
+                EditorGUILayout.HelpBox(result.Value, MessageType.Warning);
             }
         }
 
 
-        int callCount;
-        void OnEnable ()
-        {
-            // For manual spike
-            // EditorApplication.modifierKeysChanged += PublishPolling;
-            // Too early to get ContentUploadedDialog
-            // EditorApplication.playmodeStateChanged += PublishPolling;
 
-            // so, use update and polling
+    }
+    ////////////////////////////////////////////////////////////////////////////////
+
+    [InitializeOnLoad]
+    public class ClientStarter {
+        
+        ////////////////////////////////////////////////////////////
+        // sub structures
+
+        public enum WorldAccessLevel
+        {
+            Public,      // access "", omit tailing ~ section
+            FriendsPlus, // access "hidden"
+            Friends,     // access "friends"
+            InvitePlus,  // access "private", at last "~canRequestInvite"
+            Invite,      // access "private"
+        }
+
+        public class Settings
+        {
+            public bool startAfterPublished;
+            public WorldAccessLevel worldAccessLevel;
+
+            private const string startAfterPublished_key = "Iwsd.ClientStarter.startAfterPublished";
+            private const string worldAccessLevel_key = "Iwsd.ClientStarter.worldAccessLevel";
+
+            internal static Settings Load()
+            {
+                var o = new Settings();
+                o.startAfterPublished = EditorPrefs.GetBool(startAfterPublished_key, true);
+                o.worldAccessLevel = (WorldAccessLevel)EditorPrefs.GetInt(worldAccessLevel_key, (int)WorldAccessLevel.Friends);
+                return o;
+            }
+            
+            internal void Store()
+            {
+                EditorPrefs.SetBool(startAfterPublished_key, this.startAfterPublished);
+                EditorPrefs.GetInt(worldAccessLevel_key, (int)this.worldAccessLevel);
+            }
+        }
+
+        public class Result {
+            public bool IsSucceeded;
+            public string Value;
+            public Result(bool isSucceeded, string value)
+            {
+                IsSucceeded = isSucceeded;
+                Value = value;
+            }
+        }
+
+        ////////////////////////////////////////////////////////////
+        // Auto start handling
+        
+        static public Settings settings;
+        static public Result lastResult;
+        
+        static ClientStarter()
+        {
+            lastResult = new Result(true, "");
+            settings = Settings.Load();
+
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.update += PublishPolling;
-            callCount = 0;
+            // EditorApplication.modifierKeysChanged += PublishPolling; // For manual spike
         }
 
-        public int CHECK_CYCLE = 200;
-        private void PublishPolling()
+        // How many update call to next dialog polling
+        private const int CHECK_CYCLE_ONUPDATE = 50;
+        private const int CHECK_TRIAL_LIMIT = 20;
+
+        static private int callCount = 0;
+        static private int trialCount = CHECK_TRIAL_LIMIT + 1;
+
+        private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            // To reduce CPU load
-            if (++callCount % CHECK_CYCLE != 0)
+            if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                callCount = 0;
+                trialCount = 0;
+            }
+        }
+
+        private static void PublishPolling()
+        {
+            // Avoid calling FindObjectsOfTypeAll so often, to reduce CPU load 
+            if ((CHECK_TRIAL_LIMIT < trialCount) || (++callCount % CHECK_CYCLE_ONUPDATE != 0))
             {
                 return;
             }
+
             callCount = 0;
+            trialCount++;
 
-            // TODO hook update only if needed (i.e. setup checked)
-            if (!startAfterPublished)
+            // This option check must be after count up considering or it opens immediately when dialog opend and option turns on
+            if (!settings.startAfterPublished)
             {
                 return;
             }
-
+                                   
+            // Currently (VRCSDK-2019.06.25.21.13_Public) ContentUploadedDialog :
+            // * appears after publish
+            // * is used for world publishing only
+            // * is restricted to one instance
+            // so it's fit my purpose.
             var completeDialog = Resources.FindObjectsOfTypeAll(typeof(VRCSDK2.ContentUploadedDialog)) as EditorWindow[];
             if (completeDialog.Length != 0)
             {
-                var url = TryToOpenLaunchURL(worldAccessLevel);
-                if (url != null)
+                var r = TryToOpenLaunchURL(settings.worldAccessLevel);
+                if (r.IsSucceeded)
                 {
                     completeDialog[0].Close();
                 }
@@ -162,89 +236,83 @@ namespace Iwsd
         }
 
 
-        ////////////////////////////////////////////////////////////////////////////////
-
-        public class ComposeResult {
-            public bool IsSucceeded;
-            public string Result;
-            public ComposeResult(bool isSucceeded, string result)
-            {
-                IsSucceeded = isSucceeded;
-                Result = result;
-            }
-        }
-
-        private static ComposeResult TryToOpen(ComposeResult url)
+        ////////////////////////////////////////////////////////////
+        // Do start actions
+        
+        private static Result TryToOpen(Result url)
         {
             if (url.IsSucceeded)
             {
-                var s = url.Result;
+                var s = url.Value;
                 Debug.Log("will OpenURL url='" + s + "'");
                 Application.OpenURL(s);
             }
             else
             {
-                Debug.LogWarning(url.Result);
+                Debug.LogWarning(url.Value);
             }
 
             return url;
         }
 
-        public static ComposeResult TryToOpenManageURL()
+        public static Result TryToOpenManageURL()
         {
-            return TryToOpen(ComposeManageURL());
+            lastResult = TryToOpen(ComposeManageURL());
+            return lastResult;
         }
 
-        public static ComposeResult TryToOpenLaunchURL(WorldAccessLevel accessLevel)
+        public static Result TryToOpenLaunchURL(WorldAccessLevel accessLevel)
         {
-            return TryToOpen(ComposeLaunchURL(accessLevel));
+            lastResult = TryToOpen(ComposeLaunchURL(accessLevel));
+            return lastResult;
         }
 
-        public static ComposeResult ExtractSceneBlueprintId()
+        public static Result ExtractSceneBlueprintId()
         {
             var vrcPipelineManager = Resources.FindObjectsOfTypeAll(typeof(VRC.Core.VRCPipelineManager)) as VRC.Core.VRCPipelineManager[];
             foreach (var pm in vrcPipelineManager)
             {
+                // PrefabUtility.GetPrefabType returns None on Unity 2017.4.15f1, PrefabInstance on Unity 2017.4.28f1
+                // And GetPrefabType is obsolete in Unity 2018.3.x. Use PrefabUtility.IsPartOfPrefabAsset instead
                 PrefabType ptype = PrefabUtility.GetPrefabType(pm);
-                if (ptype == PrefabType.PrefabInstance)
+                if ((ptype == PrefabType.PrefabInstance) || (ptype == PrefabType.None))
                 {
-                    // Debug.Log("Found PrefabInstance");
                     var blueprintId = pm.blueprintId;
                     if (blueprintId == null || blueprintId == "")
                     {
-                        return new ComposeResult(false, "Not publishd yet? (blueprintId is empty)");
+                        return new Result(false, "Not publishd yet? (blueprintId is empty)");
                     }
                         
-                    return new ComposeResult(true, blueprintId);
+                    return new Result(true, blueprintId);
                 }
             }
-            return new ComposeResult(false, "VRC_SceneDescriptor missing? (vrcPipelineManager.Length=" + vrcPipelineManager.Length + ")");
+            return new Result(false, "VRC_SceneDescriptor is missing? (vrcPipelineManager.Length=" + vrcPipelineManager.Length + ")");
         }
         
 
-        public static ComposeResult ComposeLaunchURL(WorldAccessLevel accessLevel)
+        public static Result ComposeLaunchURL(WorldAccessLevel accessLevel)
         {
             var bid = ExtractSceneBlueprintId();
             if (!bid.IsSucceeded)
             {
                 return bid;
             }
-            var blueprintId = bid.Result;
+            var blueprintId = bid.Value;
 
             if (!VRC.Core.APIUser.IsLoggedInWithCredentials)
             {
-                return new ComposeResult(false, "Not logged in. (Open 'VRChat SDK/Settings' )");
+                return new Result(false, "Not logged in. (Open 'VRChat SDK/Settings to check and try again' )");
             }
 
             var user = VRC.Core.APIUser.CurrentUser;
             if (user == null)
             {
-                return new ComposeResult(false, "user == null");
+                return new Result(false, "user == null");
             }
             var userid = user.id;
             if (userid == null)
             {
-                return new ComposeResult(false, "user.id == null");
+                return new Result(false, "user.id == null");
             }
 
             var nonce = Guid.NewGuid();
@@ -266,16 +334,16 @@ namespace Iwsd
                 }
             }
 
-            return new ComposeResult(true, url);
+            return new Result(true, url);
         }
 
-        public static ComposeResult ComposeManageURL()
+        public static Result ComposeManageURL()
         {
             var bid = ExtractSceneBlueprintId();
             if (bid.IsSucceeded)
             {
                 // https://vrchat.com/home/world/{blueprintId}
-                return new ComposeResult(true, "https://vrchat.com/home/world/" + bid.Result);
+                return new Result(true, "https://vrchat.com/home/world/" + bid.Value);
             }
             return bid;
         }
