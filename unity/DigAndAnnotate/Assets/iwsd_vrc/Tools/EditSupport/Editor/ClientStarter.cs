@@ -28,34 +28,34 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Text.RegularExpressions;
-    
+
 /**
  * VRChat Client Starter
  *
  *
- * This Unity extension starts VRChat client automatically after world publishing is completed.
- * You can go directly into published world.
+ * This Unity editor extension starts VRChat client automatically after world publishing is completed.
+ * You can go directly into published world and start to test it.
  *
  * After installation, open window via Unity menu Window > VRC_Iwsd > Client Starter
  *
- * When "Auto Start" option is enabled, this closes VRChat SDK "Manage World in Browser" dialog.
+ * When "Start After Publish" option is enabled, this closes VRChat SDK "Manage World in Browser" dialog.
  * Disenable it if you need to use that dialog.
  *
  * Other features
  * - Start client manually
  * - Open manage page at vrchat.com
- * - "Auto Start" feature works even if setting window is not opened
- *
+ * - "Start After Publish" feature works even if setting window is not opened
+ * - and more
  *
  * Written by naqtn (https://twitter.com/naqtn)
  * Hosted at https://github.com/naqtn/ProgrammingInVRChat
  * If you have defect reports or feature requests, please post to GitHub issue (https://github.com/naqtn/ProgrammingInVRChat/issues)
  *
- * IDEA hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need? Polling is not good)
- * IDEA preserve nonce and instance number and reasonably refresh.  (need?)
  */
 namespace Iwsd
 {
+    // IDEA hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need? Polling is not good)
+    // IDEA preserve nonce and instance number and reasonably refresh.  (need?)
 
     public class ClientStarterWindow : EditorWindow
     {
@@ -75,13 +75,22 @@ namespace Iwsd
                              "On: Use 'Installed Client Path' in VRChat SDK Setting to start. Off: Use launch link (vrchat://...) only");
         private readonly GUIContent useNoVrOption_content
             = new GUIContent("Desktop mode",
-                             "Start client in desktop mode. (use --no-vr option)");
+                             "Start VRChat in desktop mode.");
+        private readonly GUIContent openLaunchURL_content
+            = new GUIContent("Start Published World",
+                             "Starts VRChat client manually");
+        private readonly GUIContent openManageURL_content
+            = new GUIContent("Open Manage Page",
+                             "Open world management page at vrchat.com");
         private readonly GUIContent startAnotherWorld_content
             = new GUIContent(" Start another world:",
                              "To start a world that doesn't relate to editing scene");
         private readonly GUIContent result1_blueprintId_content
             = new GUIContent("World ID (read only)",
                              "Automatically filled with editing scene's ID");
+        // private readonly GUIContent _content
+        //     = new GUIContent("",
+        //                      "");
 
         bool moreOptions = false;
         string manualInputId = "(input world ID: wrld_xxx...)"; // I choiced not to be saved
@@ -95,7 +104,7 @@ namespace Iwsd
             /// Label
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("VRChat Client Starter", new GUIStyle(){fontStyle = FontStyle.Bold});
-            moreOptions = EditorGUILayout.ToggleLeft("Advanced options", moreOptions);
+            moreOptions = EditorGUILayout.ToggleLeft("Advanced", moreOptions);
             EditorGUILayout.EndHorizontal();
 
             /// Settings
@@ -135,11 +144,11 @@ namespace Iwsd
             /// Operation buttons
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Operations");
-            if (GUILayout.Button("Start Published World", GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(openLaunchURL_content, GUILayout.ExpandWidth(false)))
             {
                 ClientStarter.lastResult = ClientStarter.TryToOpenLaunchURL(null, settings.worldAccessLevel1);
             }
-            if (GUILayout.Button("Open Manage Page", GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(openManageURL_content, GUILayout.ExpandWidth(false)))
             {
                 ClientStarter.lastResult = ClientStarter.TryToOpenManageURL(null);
             }
@@ -152,10 +161,7 @@ namespace Iwsd
                     {
                         EditorGUIUtility.systemCopyBuffer = r.Value;
                     }
-                    else
-                    {
-                        ClientStarter.lastResult = r;
-                    }
+                    ClientStarter.lastResult = r;
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -199,10 +205,7 @@ namespace Iwsd
                     {
                         EditorGUIUtility.systemCopyBuffer = r.Value;
                     }
-                    else
-                    {
-                        result2 = r;
-                    }
+                    result2 = r;
                 }
                 EditorGUILayout.EndHorizontal();
 
@@ -396,7 +399,7 @@ namespace Iwsd
 
             return new Result(url, true, clientPath);
         }
-                    
+
         private static Result TryToStart(Result url)
         {
             if (!url.IsSucceeded)
@@ -404,10 +407,12 @@ namespace Iwsd
                 Debug.LogWarning(url.Value);
                 return url;
             }
-            
+
             var path = ExtractClientPath(url);
             var clientPath = path.Value;
 
+            // ProcessStartInfo.ArgumentList is not available in Unity 2017.4
+            // So assemble arguments to one string
             var args = "\"" + url.Value + "\"";
             if (settings.useNoVrOption)
             {
@@ -421,11 +426,11 @@ namespace Iwsd
                 using (var proc = new System.Diagnostics.Process())
                 {
                     var wdir = System.IO.Path.GetDirectoryName(clientPath);
-                    
-                    proc.StartInfo.FileName = clientPath;
-                    proc.StartInfo.Arguments = args;
-                    proc.StartInfo.WorkingDirectory = wdir;
-                    proc.StartInfo.UseShellExecute = true;
+                    var info = proc.StartInfo;
+                    info.FileName = clientPath;
+                    info.Arguments = args;
+                    info.WorkingDirectory = wdir;
+                    info.UseShellExecute = true;
                     proc.Start();
                 }
             }
@@ -436,7 +441,7 @@ namespace Iwsd
 
             return url;
         }
-        
+
         private static Result TryToOpen(Result url)
         {
             if (url.IsSucceeded)
@@ -469,7 +474,7 @@ namespace Iwsd
         // VRChat use lowercase only
         private static Regex worldIdRex
             = new Regex("wrld_[0-9a-f]{8}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{12}");
-        
+
         public static Result ExtractSceneBlueprintId(string id_opt)
         {
             if (id_opt != null)
@@ -484,7 +489,7 @@ namespace Iwsd
                 else
                 {
                     var r = new Result(null, false, "It's not a world ID string (wrong format)");
-                    return r;  
+                    return r;
                 }
             }
 
@@ -534,7 +539,7 @@ namespace Iwsd
             {
                 if (!VRC.Core.APIUser.IsLoggedInWithCredentials)
                 {
-                    return new Result(bid, false, "Not logged in. (Open 'VRChat SDK/Settings to check and try again' )");
+                    return new Result(bid, false, "Not logged in. (Open 'VRChat SDK/Settings' to check and try again)");
                 }
 
                 var user = VRC.Core.APIUser.CurrentUser;
