@@ -51,9 +51,7 @@ using System.Text.RegularExpressions;
  * Hosted at https://github.com/naqtn/ProgrammingInVRChat
  * If you have defect reports or feature requests, please post to GitHub issue (https://github.com/naqtn/ProgrammingInVRChat/issues)
  *
- *
  * IDEA hide "not logged in" warning when IsLoggedInWithCredentials becomes true (need? Polling is not good)
- * IDEA show URL as copyable string (need?)
  * IDEA preserve nonce and instance number and reasonably refresh.  (need?)
  */
 namespace Iwsd
@@ -68,6 +66,23 @@ namespace Iwsd
             EditorWindow.GetWindow<ClientStarterWindow>("VRC Client");
         }
 
+
+        private readonly GUIContent startAfterPublished_content
+            = new GUIContent("Start After Publish",
+                             "Start client automatically after publish completed");
+        private readonly GUIContent startLikeAsSDK_content
+            = new GUIContent("Use SDK's 'Client Path'",
+                             "On: Use 'Installed Client Path' in VRChat SDK Setting to start. Off: Use launch link (vrchat://...) only");
+        private readonly GUIContent useNoVrOption_content
+            = new GUIContent("Desktop mode",
+                             "Start client in desktop mode. (use --no-vr option)");
+        private readonly GUIContent startAnotherWorld_content
+            = new GUIContent(" Start another world:",
+                             "To start a world that doesn't relate to editing scene");
+        private readonly GUIContent result1_blueprintId_content
+            = new GUIContent("World ID (read only)",
+                             "Automatically filled with editing scene's ID");
+
         bool moreOptions = false;
         string manualInputId = "(input world ID: wrld_xxx...)"; // I choiced not to be saved
         ClientStarter.Result result2 = new ClientStarter.Result(null, true, "");
@@ -80,25 +95,18 @@ namespace Iwsd
             /// Label
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("VRChat Client Starter", new GUIStyle(){fontStyle = FontStyle.Bold});
-            moreOptions = EditorGUILayout.ToggleLeft("more options", moreOptions);
+            moreOptions = EditorGUILayout.ToggleLeft("Advanced options", moreOptions);
             EditorGUILayout.EndHorizontal();
 
             /// Settings
             EditorGUI.BeginChangeCheck();
-            settings.startAfterPublished
-                = EditorGUILayout.Toggle(new GUIContent("Start After Publish", "Start client automatically after publish completed"),
-                                         settings.startAfterPublished);
+            settings.startAfterPublished = EditorGUILayout.Toggle(startAfterPublished_content, settings.startAfterPublished);
             if (moreOptions)
             {
-                settings.startLikeAsSDK
-                    = EditorGUILayout.Toggle(new GUIContent("Start Like As SDK ",
-                                                            "If on, SDK setting 'Installed Client Path' is used. If off, start like as Web browser does"),
-                                             settings.startLikeAsSDK);
+                settings.startLikeAsSDK = EditorGUILayout.Toggle(startLikeAsSDK_content, settings.startLikeAsSDK);
                 GUI.enabled = settings.startLikeAsSDK;
                 EditorGUI.indentLevel++;
-                settings.useNoVrOption
-                    = EditorGUILayout.Toggle(new GUIContent("Desktop mode", "Start client in desktop mode. (use --no-vr option)"),
-                                             settings.useNoVrOption);
+                settings.useNoVrOption = EditorGUILayout.Toggle(useNoVrOption_content, settings.useNoVrOption);
                 EditorGUI.indentLevel--;
                 GUI.enabled = true;
             }
@@ -108,35 +116,51 @@ namespace Iwsd
             if (EditorGUI.EndChangeCheck()) {
                 settings.Store();
             }
-            if (moreOptions)
+
+            if (moreOptions) // World ID
             {
+                // Use PrefixLabel and SelectableLabel instead of TextField.
+                // (Is there better way to read only TextField?)
+                // EditorGUILayout.TextField("World ID (read only)", result.blueprintId);
                 var rect = EditorGUILayout.GetControlRect(true);
-                EditorGUI.PrefixLabel(rect, new GUIContent("World ID (read only)"));
+                EditorGUI.PrefixLabel(rect, result1_blueprintId_content);
                 rect.x += EditorGUIUtility.labelWidth;
                 rect.width -= EditorGUIUtility.labelWidth;
-                GUI.enabled = false;
+                GUI.enabled = false; // To draw fake TextField rect.
                 EditorGUI.TextField(rect, "");
                 GUI.enabled = true;
                 EditorGUI.SelectableLabel(rect, result1.blueprintId);
-                // EditorGUILayout.TextField("World ID (read only)", result.blueprintId);
             }
 
             /// Operation buttons
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Operations");
-            if (GUILayout.Button("Start Published World",  GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button("Start Published World", GUILayout.ExpandWidth(false)))
             {
-                var r = ClientStarter.TryToOpenLaunchURL(null, settings.worldAccessLevel1);
-                ClientStarter.lastResult = r;
+                ClientStarter.lastResult = ClientStarter.TryToOpenLaunchURL(null, settings.worldAccessLevel1);
             }
-            if (GUILayout.Button("Open Manage Page",  GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button("Open Manage Page", GUILayout.ExpandWidth(false)))
             {
-                var r = ClientStarter.TryToOpenManageURL(null);
-                ClientStarter.lastResult = r;
+                ClientStarter.lastResult = ClientStarter.TryToOpenManageURL(null);
+            }
+            if (moreOptions)
+            {
+                if (GUILayout.Button("Copy Launch Link", GUILayout.ExpandWidth(false)))
+                {
+                    var r = ClientStarter.ComposeLaunchURL(null, settings.worldAccessLevel1);
+                    if (r.IsSucceeded)
+                    {
+                        EditorGUIUtility.systemCopyBuffer = r.Value;
+                    }
+                    else
+                    {
+                        ClientStarter.lastResult = r;
+                    }
+                }
             }
             EditorGUILayout.EndHorizontal();
 
-            //// Info
+            /// Info 1
             EditorGUILayout.Space();
             if (!result1.IsSucceeded)
             {
@@ -148,9 +172,7 @@ namespace Iwsd
             {
                 /// Section label
                 GUILayout.Space(15);
-                EditorGUILayout.LabelField(new GUIContent(" Start another world:",
-                                                          "To start a world that doesn't relate to editing scene"),
-                                           new GUIStyle(){fontStyle = FontStyle.Bold});
+                EditorGUILayout.LabelField(startAnotherWorld_content, new GUIStyle(){fontStyle = FontStyle.Bold});
                 EditorGUI.indentLevel++;
 
                 /// Settings 2
@@ -169,6 +191,18 @@ namespace Iwsd
                 if (GUILayout.Button("Open Manage Page",  GUILayout.ExpandWidth(false)))
                 {
                     result2 = ClientStarter.TryToOpenManageURL(manualInputId);
+                }
+                if (GUILayout.Button("Copy Launch Link", GUILayout.ExpandWidth(false)))
+                {
+                    var r = ClientStarter.ComposeLaunchURL(manualInputId, settings.worldAccessLevel2);
+                    if (r.IsSucceeded)
+                    {
+                        EditorGUIUtility.systemCopyBuffer = r.Value;
+                    }
+                    else
+                    {
+                        result2 = r;
+                    }
                 }
                 EditorGUILayout.EndHorizontal();
 
@@ -458,7 +492,7 @@ namespace Iwsd
             foreach (var pm in vrcPipelineManager)
             {
                 // PrefabUtility.GetPrefabType returns None on Unity 2017.4.15f1, PrefabInstance on Unity 2017.4.28f1
-                // And GetPrefabType is obsolete in Unity 2018.3.x. Use PrefabUtility.IsPartOfPrefabAsset instead
+                // And GetPrefabType is obsolete in Unity 2018.3.x. Use PrefabUtility.IsPartOfPrefabAsset instead in future.
                 PrefabType ptype = PrefabUtility.GetPrefabType(pm);
                 if ((ptype == PrefabType.PrefabInstance) || (ptype == PrefabType.None))
                 {
@@ -492,7 +526,7 @@ namespace Iwsd
             var instno = new System.Random().Next(1000, 9000);
 
 
-            // NOTE 'ref' should be other value. But API is not documented.
+            // NOTE 'ref' should be other value. But leave it because the API is undocumented.
             //  "vrchat://launch?ref=vrchat.com&id={blueprintId}:{instno}~{access}({userid})~nonce({nonce}){option}";
 
             var url = "vrchat://launch?ref=vrchat.com&id=" + blueprintId + ":" + instno;
