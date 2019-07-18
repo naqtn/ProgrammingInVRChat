@@ -77,6 +77,13 @@ And selecting my world from quick menu operation is a pain. So I made this tool.
     * This option is available only when `Use SDK's 'Client Path'` is on.
 
 
+## Release Note
+- ClientStarter-20190708
+    - initial release
+- ClientStarter-20190718
+    - Fix Access selections ware not stored
+
+
 ## Acknowledgments
 Thanks VRCPrefabs and iwashi farm people for testing and suggestions.
 

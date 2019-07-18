@@ -31,7 +31,7 @@ using System.Text.RegularExpressions;
 
 /**
  * VRChat Client Starter
- *
+ *  ver. ClientStarter-20190718
  *
  * This Unity editor extension starts VRChat client automatically after world publishing is completed.
  * You can go directly into published world and start to test it.

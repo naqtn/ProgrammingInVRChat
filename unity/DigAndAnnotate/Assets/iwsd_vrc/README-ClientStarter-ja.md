@@ -77,6 +77,13 @@
     * この選択は `Use SDK's 'Client Path'` が有効である場合にのみ機能する
 
 
+## リリース ノート
+- ClientStarter-20190708
+    - 初版リリース
+- ClientStarter-20190718
+    - Access の選択が保存されていなかったのを修正
+
+
 ## 謝辞
 Thanks VRCPrefabs and iwashi farm people for testing and suggestions.
 
