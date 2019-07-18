@@ -36,6 +36,15 @@ namespace Iwsd
         
         void OnGUI ()
         {
+            var assets = Selection.assetGUIDs;
+            for (int i = 0; i < assets.Length; i++)
+            {
+                //Debug.LogError("assets[" + i + "]='" + assets[i] + "'");
+                var path = AssetDatabase.GUIDToAssetPath(assets[i]);
+                //Debug.LogError(" path='" + path + "'");
+            }
+            //  ref:2224:VRCSDK/Dependencies/VRChat/VRCSDK2.dll            
+
             var active = Selection.activeGameObject;
             if (active == null)
             {

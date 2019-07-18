@@ -270,8 +270,8 @@ namespace Iwsd
                 EditorPrefs.SetBool(startAfterPublished_key, this.startAfterPublished);
                 EditorPrefs.SetBool(startLikeAsSDK_key, this.startLikeAsSDK);
                 EditorPrefs.SetBool(useNoVrOption_key, this.useNoVrOption);
-                EditorPrefs.GetInt(worldAccessLevel1_key, (int)this.worldAccessLevel1);
-                EditorPrefs.GetInt(worldAccessLevel2_key, (int)this.worldAccessLevel2);
+                EditorPrefs.SetInt(worldAccessLevel1_key, (int)this.worldAccessLevel1);
+                EditorPrefs.SetInt(worldAccessLevel2_key, (int)this.worldAccessLevel2);
             }
         }
 
