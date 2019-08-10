@@ -86,12 +86,14 @@ namespace Iwsd
         }
 
 
+        ////////////////////////////////////////////////////////////
+
         private static string GetGameObjectPath(GameObject anObject)
         {
             var buf = new System.Text.StringBuilder();
             GetGameObjectPathSub(anObject.transform, buf);
             return buf.ToString();
-        }             
+        }   
 
         private static void GetGameObjectPathSub(Transform transform, System.Text.StringBuilder buf)
         {
@@ -107,19 +109,19 @@ namespace Iwsd
         // "Inspector"
         
         // Component to Editor map
-        // Key is full name of type string. It's not Type to support non public type (ex VRC_Panorama)
-        static private Dictionary<string, Type> EditorRegistry;
+        // Key is full name of type string. It's not `System.Type`. This design is for supporting non public type (ex VRC_Panorama)
+        static private Dictionary<string, Type[]> EditorRegistry;
     
         static IwsdSubInspectorWindow()
         {
-            EditorRegistry = new Dictionary<string, Type>();
+            EditorRegistry = new Dictionary<string, Type[]>();
 
             // TODO gather implementation classes via custom attributes
-            EditorRegistry.Add("UnityEngine.UI.Button", typeof(ButtonUnityEventOrderEditor));
-            EditorRegistry.Add("UnityEngine.UI.InputField", typeof(InputFieldUnityEventOrderEditor));
-            EditorRegistry.Add("VRCSDK2.VRC_Trigger", typeof(VRC_TriggerOrderEditor));
-            // EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaSimpleEditor));
-            EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaOrderEditor));
+            EditorRegistry.Add("UnityEngine.UI.Button", new Type[]{typeof(ButtonUnityEventOrderEditor)});
+            EditorRegistry.Add("UnityEngine.UI.InputField", new Type[]{typeof(InputFieldUnityEventOrderEditor)});
+            EditorRegistry.Add("VRCSDK2.VRC_Trigger", new Type[]{typeof(VRC_TriggerOrderEditor), typeof(VRC_TriggerCopyPasteEditor)});
+            // EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", new Type[]{typeof(VRC_PanoramaSimpleEditor)});
+            EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", new Type[]{typeof(VRC_PanoramaOrderEditor)});
         }
 
         List<int> ComponentIds = new List<int>();
@@ -159,17 +161,24 @@ namespace Iwsd
                 var compTypeName = compObj.GetType().FullName;
                 if (EditorRegistry.ContainsKey(compTypeName))
                 {
-                    InstantiateIwsdEditor(compTypeName, compObj);
+                    InstantiateIwsdEditors(compTypeName, compObj);
                     ComponentIds.Add(compObj.GetInstanceID());
                 }
             }
             
         }
 
-        private void InstantiateIwsdEditor(string compTypeName, Component compObj)
+        private void InstantiateIwsdEditors(string compTypeName, Component compObj)
         {
-            Type editorType = EditorRegistry[compTypeName];
-
+            Type[] editorTypes = EditorRegistry[compTypeName];
+            foreach (var t in editorTypes)
+            {
+                InstantiateIwsdEditor(t, compObj);
+            }
+        }
+        
+        private void InstantiateIwsdEditor(Type editorType, Component compObj)
+        {
             // ScriptableObject instance = ScriptableObject.CreateInstance(editorType);
             // MEMO CreateInstance calls OnEnable on instantiation.
             // It's not too early for this inspector emulation.
@@ -316,6 +325,7 @@ namespace Iwsd
             reorderableList.onMouseUpCallback = (list) => {
                 // Debug.Log("selected:" + list.index);
             };
+
         }
 
 
@@ -437,6 +447,162 @@ namespace Iwsd
             }
             return buf.ToString();
         }
+    }
+
+
+    /**
+     * copy and paste support for VRCSDK2.VRC_Trigger's triggers through JSON text
+     */
+    class VRC_TriggerCopyPasteEditor : Iwsd.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+             
+            serializedObject.Update();
+                
+            EditorGUI.indentLevel++;
+            triggerGUI(serializedObject.targetObject as VRCSDK2.VRC_Trigger);
+            EditorGUI.indentLevel--;
+        }
+
+        List<bool> UserSelects = new List<bool>();
+        string OpResultMessage = "";
+        MessageType OpResultType = MessageType.None;
+        
+        
+        void triggerGUI(VRCSDK2.VRC_Trigger triggerComp)
+        {
+            List<VRCSDK2.VRC_Trigger.TriggerEvent> triggers = triggerComp.Triggers;
+
+            ensureUserSelectsSize(triggers);
+            for (int i = 0; i < triggers.Count; i++)
+            {
+                UserSelects[i] = EditorGUILayout.ToggleLeft(LabelOf(i, triggers[i]), UserSelects[i]);
+            }
+
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Copy to clipboard")) // "Copy to clip board as JSON"
+            {
+                var result = ExportSelected(triggerComp);
+                if (OpResultType == MessageType.Info) // means success (not good implementation design)
+                {
+                    GUIUtility.systemCopyBuffer = result;
+                }
+            }
+
+            if (GUILayout.Button("Paste from to clipboard"))
+            {
+                ImportToTail(GUIUtility.systemCopyBuffer, triggerComp);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (OpResultType != MessageType.None)
+            {
+                EditorGUILayout.HelpBox(OpResultMessage, OpResultType, true); 
+            }
+
+        }
+
+        private void ensureUserSelectsSize(List<VRCSDK2.VRC_Trigger.TriggerEvent> triggers)
+        {
+            if (UserSelects.Count != triggers.Count)
+            {
+                UserSelects.Clear();
+                for (int i = 0; i < triggers.Count; i++)
+                {
+                    UserSelects.Add(false);
+                }
+            }
+        }
+        
+        private string LabelOf(int idx, VRCSDK2.VRC_Trigger.TriggerEvent t)
+        {
+            var label = idx + ": " + t.TriggerType;
+            if (t.TriggerType == VRCSDK2.VRC_Trigger.TriggerType.Custom)
+            {
+                label += "(" + t.Name + ")";
+            }
+            return label;
+        }
+
+
+        private string ExportSelected(VRCSDK2.VRC_Trigger triggerComp)
+        {
+            var cmpJsonStr = JsonUtility.ToJson(triggerComp, false);
+            var cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
+            var cmpTriggers = cmpJsonObj["Triggers"];
+
+            var expJsonTemplate = "{\"format\":\"iwsd_vrc/Tools/PartialTriggerEvents/v1.0\", \"hint\":{}, \"data\":{\"Triggers\":[]}}";
+            var expJsonObj = SimpleJSON.JSON.Parse(expJsonTemplate);
+            var expTriggers = expJsonObj["data"]["Triggers"];
+
+            expJsonObj["hint"].Add("PlayerSettings.productName", PlayerSettings.productName);
+            expJsonObj["hint"].Add("DateTime", DateTime.UtcNow.ToString("o"));
+
+            int count = 0;
+            for (int i = 0; i < UserSelects.Count; i++)
+            {
+                if (UserSelects[i]) {
+                    expTriggers.Add(cmpTriggers[i]);
+                    count++;
+                }
+            }
+
+            if (count == 0)
+            {
+                OpResultType = MessageType.Warning;
+                OpResultMessage = "No entries selected to copy";
+            }
+            else
+            {
+                OpResultType = MessageType.Info;
+                OpResultMessage = "Copied. " + count + " entries to clip board";
+            }
+
+            return expJsonObj.ToString();
+        }
+        
+        private void ImportToTail(string importString, VRCSDK2.VRC_Trigger triggerComp)
+        {
+            SimpleJSON.JSONNode expJsonObj;
+            try
+            {
+                expJsonObj = SimpleJSON.JSON.Parse(importString);
+            }
+            catch (Exception e)
+            {
+                OpResultType = MessageType.Warning;
+                OpResultMessage = "not appropriate data in clip board";
+                return;
+            }
+
+            if (expJsonObj["format"] != "iwsd_vrc/Tools/PartialTriggerEvents/v1.0")
+            {
+                OpResultType = MessageType.Error;
+                OpResultMessage = "Unknown or unsupported format data in clip board";
+                return;
+            }
+            var cmpJsonStr = JsonUtility.ToJson(triggerComp, false);
+            var cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
+            var cmpTriggers = cmpJsonObj["Triggers"];
+
+            var expTriggers = expJsonObj["data"]["Triggers"];
+            for (int i = 0; i < expTriggers.Count; i++)
+            {
+                cmpTriggers.Add(expTriggers[i]);
+            }
+
+            string modified = cmpJsonObj.ToString();
+            Undo.RecordObject(triggerComp, "Paste to VRC_Trigger");
+            JsonUtility.FromJsonOverwrite(modified, triggerComp);
+
+            OpResultType = MessageType.Info;
+            OpResultMessage = expTriggers.Count + " entrie(s) added successfully";
+            return;
+        }
+
     }
 
 

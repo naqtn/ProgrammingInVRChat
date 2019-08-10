@@ -133,7 +133,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace SimpleJSON
+namespace Iwsd.SimpleJSON
 {
     public enum JSONNodeType
     {
