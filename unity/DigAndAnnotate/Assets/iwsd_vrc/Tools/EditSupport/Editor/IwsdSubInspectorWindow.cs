@@ -110,20 +110,32 @@ namespace Iwsd
         
         // Component to Editor map
         // Key is full name of type string. It's not `System.Type`. This design is for supporting non public type (ex VRC_Panorama)
-        static private Dictionary<string, Type[]> EditorRegistry;
+        static private Dictionary<string, List<Type>> EditorRegistry;
     
         static IwsdSubInspectorWindow()
         {
-            EditorRegistry = new Dictionary<string, Type[]>();
+            EditorRegistry = new Dictionary<string, List<Type>>();
 
             // TODO gather implementation classes via custom attributes
-            EditorRegistry.Add("UnityEngine.UI.Button", new Type[]{typeof(ButtonUnityEventOrderEditor)});
-            EditorRegistry.Add("UnityEngine.UI.InputField", new Type[]{typeof(InputFieldUnityEventOrderEditor)});
-            EditorRegistry.Add("VRCSDK2.VRC_Trigger", new Type[]{typeof(VRC_TriggerOrderEditor), typeof(VRC_TriggerCopyPasteEditor)});
-            // EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", new Type[]{typeof(VRC_PanoramaSimpleEditor)});
-            EditorRegistry.Add("VRCSDK2.scripts.Scenes.VRC_Panorama", new Type[]{typeof(VRC_PanoramaOrderEditor)});
+            RegisterEditor("UnityEngine.UI.Button", typeof(ButtonUnityEventOrderEditor));
+            RegisterEditor("UnityEngine.UI.InputField", typeof(InputFieldOnValueChangedUnityEventOrderEditor));
+            RegisterEditor("UnityEngine.UI.InputField", typeof(InputFieldOnEndEditUnityEventOrderEditor));
+            RegisterEditor("VRCSDK2.VRC_Trigger", typeof(VRC_TriggerOrderEditor));
+            RegisterEditor("VRCSDK2.VRC_Trigger", typeof(VRC_TriggerCopyPasteEditor));
+            // RegisterEditor("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaSimpleEditor)});
+            RegisterEditor("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaOrderEditor));
         }
 
+        public static void RegisterEditor(string typeFullName, Type editorType)
+        {
+            if (!EditorRegistry.ContainsKey(typeFullName))
+            {
+                EditorRegistry.Add(typeFullName, new List<Type>());
+            }
+
+            EditorRegistry[typeFullName].Add(editorType);
+        }
+            
         List<int> ComponentIds = new List<int>();
         List<Editor> EditorInstances = new List<Editor>();
 
@@ -170,7 +182,7 @@ namespace Iwsd
 
         private void InstantiateIwsdEditors(string compTypeName, Component compObj)
         {
-            Type[] editorTypes = EditorRegistry[compTypeName];
+            List<Type> editorTypes = EditorRegistry[compTypeName];
             foreach (var t in editorTypes)
             {
                 InstantiateIwsdEditor(t, compObj);
@@ -483,7 +495,7 @@ namespace Iwsd
 
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Copy to clipboard")) // "Copy to clip board as JSON"
+            if (GUILayout.Button("Copy to clipboard")) // "Copy to clipboard as JSON"
             {
                 var result = ExportSelected(triggerComp);
                 if (OpResultType == MessageType.Info) // means success (not good implementation design)
@@ -527,6 +539,7 @@ namespace Iwsd
             return label;
         }
 
+        const string jsonFormatName_partialObject = "iwsd_vrc/Tools/PartialObject/v1.0";
 
         private string ExportSelected(VRCSDK2.VRC_Trigger triggerComp)
         {
@@ -534,12 +547,13 @@ namespace Iwsd
             var cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
             var cmpTriggers = cmpJsonObj["Triggers"];
 
-            var expJsonTemplate = "{\"format\":\"iwsd_vrc/Tools/PartialTriggerEvents/v1.0\", \"hint\":{}, \"data\":{\"Triggers\":[]}}";
+            var expJsonTemplate = "{\"format\":\"" + jsonFormatName_partialObject + "\", \"hint\":{}, \"data\":{\"Triggers\":[]}}";
             var expJsonObj = SimpleJSON.JSON.Parse(expJsonTemplate);
             var expTriggers = expJsonObj["data"]["Triggers"];
 
             expJsonObj["hint"].Add("PlayerSettings.productName", PlayerSettings.productName);
-            expJsonObj["hint"].Add("DateTime", DateTime.UtcNow.ToString("o"));
+            expJsonObj["hint"].Add("created", DateTime.UtcNow.ToString("o"));
+            expJsonObj.Add("objectType", triggerComp.GetType().FullName); // specify type by full name
 
             int count = 0;
             for (int i = 0; i < UserSelects.Count; i++)
@@ -558,7 +572,7 @@ namespace Iwsd
             else
             {
                 OpResultType = MessageType.Info;
-                OpResultMessage = "Copied. " + count + " entries to clip board";
+                OpResultMessage = "Copied. " + count + " entries to clipboard";
             }
 
             return expJsonObj.ToString();
@@ -574,16 +588,18 @@ namespace Iwsd
             catch (Exception e)
             {
                 OpResultType = MessageType.Warning;
-                OpResultMessage = "not appropriate data in clip board";
+                OpResultMessage = "not appropriate data in clipboard";
                 return;
             }
 
-            if (expJsonObj["format"] != "iwsd_vrc/Tools/PartialTriggerEvents/v1.0")
+            if ((expJsonObj["format"] != jsonFormatName_partialObject)
+                || (expJsonObj["objectType"] != triggerComp.GetType().FullName))
             {
                 OpResultType = MessageType.Error;
-                OpResultMessage = "Unknown or unsupported format data in clip board";
+                OpResultMessage = "Unknown or unsupported format data in clipboard";
                 return;
             }
+
             var cmpJsonStr = JsonUtility.ToJson(triggerComp, false);
             var cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
             var cmpTriggers = cmpJsonObj["Triggers"];
@@ -597,6 +613,26 @@ namespace Iwsd
             string modified = cmpJsonObj.ToString();
             Undo.RecordObject(triggerComp, "Paste to VRC_Trigger");
             JsonUtility.FromJsonOverwrite(modified, triggerComp);
+
+            bool advanced = false;
+            for (int i = 0; i < triggerComp.Triggers.Count; i++)
+            {
+                switch (triggerComp.Triggers[i].BroadcastType)
+                {
+                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.AlwaysUnbuffered:
+                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.OwnerUnbuffered:
+                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.AlwaysBufferOne:
+                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.OwnerBufferOne:
+                        break;
+                    default:
+                        advanced = true;
+                        break;
+                }
+            }
+            if (advanced)
+            {
+                triggerComp.UsesAdvancedOptions = true;
+            }
 
             OpResultType = MessageType.Info;
             OpResultMessage = expTriggers.Count + " entrie(s) added successfully";
@@ -641,18 +677,25 @@ namespace Iwsd
         public ButtonUnityEventOrderEditor()
         {
             EventPropName = "m_OnClick";
-            HeaderTitle = "Button | On Click()";
+            HeaderTitle = "Button | On Click ()";
         }
     }
 
-    class InputFieldUnityEventOrderEditor : UnityEventOrderEditor
+    class InputFieldOnValueChangedUnityEventOrderEditor : UnityEventOrderEditor
     {
-        InputFieldUnityEventOrderEditor()
+        InputFieldOnValueChangedUnityEventOrderEditor()
         {
-            // EventPropName =  "m_OnEndEdit";
-            // HeaderTitle =  "InputField | On End Edit(String)";
             EventPropName =  "m_OnValueChanged";
-            HeaderTitle =  "InputField | On Value Changed(String)";
+            HeaderTitle =  "InputField | On Value Changed (String)";
+        }
+    }
+        
+    class InputFieldOnEndEditUnityEventOrderEditor : UnityEventOrderEditor
+    {
+        InputFieldOnEndEditUnityEventOrderEditor()
+        {
+            EventPropName =  "m_OnEndEdit";
+            HeaderTitle =  "InputField | On End Edit (String)";
         }
     }
         
