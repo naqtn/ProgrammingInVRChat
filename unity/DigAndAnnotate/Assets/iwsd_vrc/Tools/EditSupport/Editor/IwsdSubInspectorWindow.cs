@@ -3,7 +3,7 @@
  *
  * By naqtn (https://twitter.com/naqtn)
  * Hosted at https://github.com/naqtn/ProgrammingInVRChat
- * 
+ *
  */
 using UnityEngine;
 using System;
@@ -12,7 +12,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
-    
+
 namespace Iwsd
 {
 
@@ -33,7 +33,7 @@ namespace Iwsd
         MessageType lastMessageType = MessageType.None;
         int lastInstanceId;
         Vector2 scrollPosition = new Vector2(0, 0);
-        
+
         void OnGUI ()
         {
             var assets = Selection.assetGUIDs;
@@ -43,7 +43,7 @@ namespace Iwsd
                 var path = AssetDatabase.GUIDToAssetPath(assets[i]);
                 //Debug.LogError(" path='" + path + "'");
             }
-            //  ref:2224:VRCSDK/Dependencies/VRChat/VRCSDK2.dll            
+            //  ref:2224:VRCSDK/Dependencies/VRChat/VRCSDK2.dll
 
             var active = Selection.activeGameObject;
             if (active == null)
@@ -54,7 +54,7 @@ namespace Iwsd
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
             EditorGUILayout.LabelField("Iwsd Sub Inspector", new GUIStyle(){fontStyle = FontStyle.Bold});
-            
+
             // CHECK ExecuteInEditMode attribute and Update
             if ((active.GetInstanceID() != lastInstanceId) || CheckComponentAlignmentChanged(active))
             {
@@ -63,7 +63,7 @@ namespace Iwsd
 
                 ReplaceEditors(active);
             }
-        
+
             DrawGUI(active);
 
             EditorGUILayout.EndScrollView();
@@ -82,9 +82,77 @@ namespace Iwsd
             // EditorGUILayout.SelectableLabel(GetGameObjectPath(active));
             EditorGUILayout.Space();
 
+            HideFlagsEdit(active);
+
             DispatchOnGUI();
         }
 
+        // NOTE: https://forum.unity.com/threads/is-it-possible-to-fold-a-component-from-script-inspector-view.296333/
+        // UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded
+
+        // HideFlags
+        // http://tsubakit1.hateblo.jp/entry/20140422/1398177224
+        bool HideFlagsEditShow = false;
+        private void HideFlagsEdit(GameObject active)
+        {
+            HideFlagsEditShow = EditorGUILayout.Foldout(HideFlagsEditShow, "Inspector Edit Protection", true);
+            if (HideFlagsEditShow)
+            {
+                // Undo.RecordObject seems not to work for hideFlags.
+                bool changed = false;
+
+                EditorGUI.indentLevel++;
+                var cur = IsNotEditable(active);
+                var sel = EditorGUILayout.ToggleLeft("whole GameObject", cur);
+                if (cur != sel)
+                {
+                    SetNotEditable(active, sel);
+                    changed = true;
+                }
+
+                EditorGUI.indentLevel++;
+                EditorGUI.BeginDisabledGroup(sel);
+                foreach (Component comp in active.GetComponents<Component>())
+                {
+                    cur = IsNotEditable(comp);
+                    sel = EditorGUILayout.ToggleLeft(comp.GetType().Name, cur);
+                    if (cur != sel)
+                    {
+                        SetNotEditable(comp, sel);
+                        changed = true;
+                    }
+                }
+                EditorGUI.EndDisabledGroup();
+                EditorGUI.indentLevel--;
+
+                EditorGUI.indentLevel--;
+
+                if (changed)
+                {
+                    // Force Inspector redraw
+                    // https://answers.unity.com/questions/333181/how-do-you-force-a-custom-inspector-to-redraw.html
+                    EditorUtility.SetDirty(active);
+                }
+
+            }
+        }
+
+        private static bool IsNotEditable(UnityEngine.Object obj)
+        {
+            return (obj.hideFlags & HideFlags.NotEditable) == HideFlags.NotEditable;
+        }
+
+        private static void SetNotEditable(UnityEngine.Object obj, bool b)
+        {
+            if (b)
+            {
+		obj.hideFlags |= HideFlags.NotEditable;
+            }
+            else
+            {
+		obj.hideFlags &= ~HideFlags.NotEditable;
+            }
+        }
 
         ////////////////////////////////////////////////////////////
 
@@ -94,7 +162,7 @@ namespace Iwsd
             var buf = new System.Text.StringBuilder();
             GetGameObjectPathSub(anObject.transform, buf);
             return buf.ToString();
-        }   
+        }
 
         private static void GetGameObjectPathSub(Transform transform, System.Text.StringBuilder buf)
         {
@@ -105,14 +173,14 @@ namespace Iwsd
             buf.Append('/');
             buf.Append(transform.name);
         }
-        
+
         ////////////////////////////////////////////////////////////
         // "Inspector"
-        
+
         // Component to Editor map
         // Key is full name of type string. It's not `System.Type`. This design is for supporting non public type (ex VRC_Panorama)
         static private Dictionary<string, List<Type>> EditorRegistry;
-    
+
         static IwsdSubInspectorWindow()
         {
             EditorRegistry = new Dictionary<string, List<Type>>();
@@ -136,7 +204,7 @@ namespace Iwsd
 
             EditorRegistry[typeFullName].Add(editorType);
         }
-            
+
         List<int> ComponentIds = new List<int>();
         List<Editor> EditorInstances = new List<Editor>();
 
@@ -158,7 +226,7 @@ namespace Iwsd
             }
             return false;
         }
-        
+
         // active object to inspect changed
         private void ReplaceEditors(GameObject anObject)
         {
@@ -168,7 +236,7 @@ namespace Iwsd
             }
             EditorInstances.Clear();
             ComponentIds.Clear();
-            
+
             foreach (var compObj in anObject.GetComponents<Component>())
             {
                 var compTypeName = compObj.GetType().FullName;
@@ -178,7 +246,7 @@ namespace Iwsd
                     ComponentIds.Add(compObj.GetInstanceID());
                 }
             }
-            
+
         }
 
         private void InstantiateIwsdEditors(string compTypeName, Component compObj)
@@ -189,20 +257,20 @@ namespace Iwsd
                 InstantiateIwsdEditor(t, compObj);
             }
         }
-        
+
         private void InstantiateIwsdEditor(Type editorType, Component compObj)
         {
             // ScriptableObject instance = ScriptableObject.CreateInstance(editorType);
             // MEMO CreateInstance calls OnEnable on instantiation.
             // It's not too early for this inspector emulation.
-            
+
             var ctor = editorType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new Type[]{}, null);
             if (ctor == null)
             {
                 Debug.LogError("Not found constructor. type=" + editorType);
                 return;
             }
-            
+
             // CHECK this implementation supports non public class ?
             object instance = ctor.Invoke(new object[]{});
             if (instance == null)
@@ -210,7 +278,7 @@ namespace Iwsd
                 Debug.LogError("Faild to create instance. type=" + editorType);
                 return;
             }
-                
+
             Editor theEditor = instance as Editor;
             if (theEditor == null)
             {
@@ -225,7 +293,7 @@ namespace Iwsd
             EditorInstances.Add(theEditor);
         }
 
-        
+
         private void DispatchOnGUI()
         {
             EditorGUILayout.BeginVertical(new GUIStyle(){margin = new RectOffset(){left=10,right=5,top=5}});
@@ -249,12 +317,12 @@ namespace Iwsd
         }
 
     }
-        
+
     // Fake  UnityEditor.Editor : UnityEngine.ScriptableObject
     public class Editor
     {
         SerializedObject _serializedObject;
-            
+
         public SerializedObject serializedObject
         {
             get
@@ -265,7 +333,7 @@ namespace Iwsd
 
         private string targetTypeName;
         private string headerString;
-        
+
         // This is internal and not compatible with UnityEditor.Editor
         internal void Initialize(UnityEngine.Object targetComponent)
         {
@@ -282,7 +350,7 @@ namespace Iwsd
 
 
 
-    
+
     ////////////////////////////////////////////////////////////
     // Editor implementations
 
@@ -292,13 +360,13 @@ namespace Iwsd
         protected string HeaderTitle;
 
         // subclass must implement OnEnable() to build reorderableList
-            
+
 
         public void OnDisable()
         {
             reorderableList = null;
         }
-            
+
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
@@ -307,9 +375,9 @@ namespace Iwsd
             reorderableList.DoLayoutList();
             serializedObject.ApplyModifiedProperties();
         }
-            
+
     }
-        
+
     // for VRCSDK2.VRC_Trigger
     class VRC_TriggerOrderEditor : ReorderEditor
     {
@@ -321,12 +389,12 @@ namespace Iwsd
                 Debug.LogError("triggersProp == null");
                 return;
             }
-                
+
             reorderableList = new ReorderableList(serializedObject, triggersProp);
             reorderableList.drawHeaderCallback = (rect) => EditorGUI.LabelField (rect, "VRC_Trigger | Triggers");
             reorderableList.drawElementCallback = (rect, index, isActive, isFocused) => {
                 // padding
-                rect.height -= 4; 
+                rect.height -= 4;
                 rect.y += 2;
                 // VRCSDK2.VRC_Trigger+TriggerEvent
                 var triggerProperty = triggersProp.GetArrayElementAtIndex(index);
@@ -431,7 +499,7 @@ namespace Iwsd
         {
             return b? "T": "F";
         }
-        
+
         private static string LayerMaskNameStrings(int layerMask)
         {
             if (layerMask == -1)
@@ -471,9 +539,9 @@ namespace Iwsd
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
-             
+
             serializedObject.Update();
-                
+
             EditorGUI.indentLevel++;
             triggerGUI(serializedObject.targetObject as VRCSDK2.VRC_Trigger);
             EditorGUI.indentLevel--;
@@ -482,8 +550,8 @@ namespace Iwsd
         List<bool> UserSelects = new List<bool>();
         string OpResultMessage = "";
         MessageType OpResultType = MessageType.None;
-        
-        
+
+
         void triggerGUI(VRCSDK2.VRC_Trigger triggerComp)
         {
             List<VRCSDK2.VRC_Trigger.TriggerEvent> triggers = triggerComp.Triggers;
@@ -505,7 +573,7 @@ namespace Iwsd
                 }
             }
 
-            if (GUILayout.Button("Paste from to clipboard"))
+            if (GUILayout.Button("Paste from clipboard"))
             {
                 ImportToTail(GUIUtility.systemCopyBuffer, triggerComp);
             }
@@ -513,7 +581,7 @@ namespace Iwsd
 
             if (OpResultType != MessageType.None)
             {
-                EditorGUILayout.HelpBox(OpResultMessage, OpResultType, true); 
+                EditorGUILayout.HelpBox(OpResultMessage, OpResultType, true);
             }
 
         }
@@ -529,7 +597,7 @@ namespace Iwsd
                 }
             }
         }
-        
+
         private string LabelOf(int idx, VRCSDK2.VRC_Trigger.TriggerEvent t)
         {
             var label = idx + ": " + t.TriggerType;
@@ -582,7 +650,7 @@ namespace Iwsd
 
             return expJsonObj.ToString();
         }
-        
+
         private void ImportToTail(string importString, VRCSDK2.VRC_Trigger triggerComp)
         {
             SimpleJSON.JSONNode expJsonObj;
@@ -664,7 +732,7 @@ namespace Iwsd
             }
             var m_PersistentCalls = m_OnClick.FindPropertyRelative("m_PersistentCalls");
             var m_Calls = m_PersistentCalls.FindPropertyRelative("m_Calls");
-        
+
             reorderableList = new ReorderableList(serializedObject, m_Calls);
             reorderableList.drawHeaderCallback = (rect) => EditorGUI.LabelField (rect, HeaderTitle);
             reorderableList.drawElementCallback = (rect, index, isActive, isFocused) => {
@@ -694,7 +762,7 @@ namespace Iwsd
             HeaderTitle =  "InputField | On Value Changed (String)";
         }
     }
-        
+
     class InputFieldOnEndEditUnityEventOrderEditor : UnityEventOrderEditor
     {
         InputFieldOnEndEditUnityEventOrderEditor()
@@ -703,7 +771,7 @@ namespace Iwsd
             HeaderTitle =  "InputField | On End Edit (String)";
         }
     }
-        
+
     // In case of Button
     // MonoBehaviour:   <= Button component
     //   ...
@@ -718,7 +786,7 @@ namespace Iwsd
     //           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
     //           m_IntArgument: 3
     //           m_FloatArgument: 0
-    //           m_StringArgument: 
+    //           m_StringArgument:
     //           m_BoolArgument: 0
     //         m_CallState: 2
     //       - m_Target: {fileID: 878055909}
@@ -739,7 +807,7 @@ namespace Iwsd
     //       Culture=neutral, PublicKeyToken=null
 
 
-    
+
     /**
      * Editor for VRCSDK2.scripts.Scenes.VRC_Panorama
      */
@@ -748,13 +816,13 @@ namespace Iwsd
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
-             
+
             serializedObject.Update();
-            
+
             EditorGUI.indentLevel++;
             panoramasGUI(serializedObject.FindProperty("panoramas"));
             EditorGUI.indentLevel--;
-                
+
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -771,13 +839,13 @@ namespace Iwsd
                 var url = panoSpec.FindPropertyRelative("url");
                 // SerializedProperty of PPtr<$Texture2D>
                 var texture = panoSpec.FindPropertyRelative("texture");
-                
+
                 EditorGUILayout.LabelField(idx + ":");
                 url.stringValue = EditorGUILayout.TextField("URL:", url.stringValue);
                 EditorGUILayout.PropertyField(texture, new GUIContent("texture"));
             }
         }
-        
+
     }
 
 
@@ -790,12 +858,12 @@ namespace Iwsd
         ReorderableList reorderableList;
         int texDispSize = 40;
         int paddingSize = 3;
-        
+
         public void OnDisable()
         {
             reorderableList = null;
         }
-            
+
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
@@ -845,5 +913,5 @@ namespace Iwsd
             // EditorGUI.PropertyField(rect, texture, new GUIContent("texture"));
         }
     }
-    
+
 }
