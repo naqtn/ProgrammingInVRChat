@@ -29,5 +29,18 @@ Move SimpleJSON namespace to Iwsd.SimpleJSON to avoid conflict with other editor
 Extend to support multiple editor for one component type.
 Separate README to en and ja files.
 
+
+### Fix unexpected broadcast type change when pasting to non-advanced
+
+* Fix unexpected broadcast type change when pasting to non-advanced
+* Change JSON format to be generalized. It can handle arbitrary object type now.
+* Introduce RegisterEditor function to public
+* Add InputField OnEndEdit list order editor
+* Fix typo
+
+
+### Add edit protection feature.
+It toggles HideFlags.NotEditable mask
+
 ---
 end

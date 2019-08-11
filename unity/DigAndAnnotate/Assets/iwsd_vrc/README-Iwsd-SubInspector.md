@@ -1,6 +1,10 @@
-# Iwsd / Sub Inspector
+# Iwsd / Sub-Inspector
 
 A tool providing reorder list UI of event handling definition etc. for VRChat world creation.
+
+![SubInspectorUI](doc/sub-inspector.PNG)
+
+Sub-inspector (left side in the image) serves supplementary edit UI for same object that Unity Inspector (right side) handles.
 
 
 ## How to use
@@ -10,23 +14,61 @@ A tool providing reorder list UI of event handling definition etc. for VRChat wo
 3. As usual, select a object to edit in Hierarchy view
 4. Use edit UI showing in SubInspector view that affects selected object's components.
 
-Drag and drop list item showing in SubInspector view to reorder
 
-## Function
 
-- Reorder list UI of :
-    - VRC_Trigger  Triggers
-    - Button  OnClick
-    - InputField  OnValueChanged
-- Display object path
-    - Currently, this is copyable read only text. You can not edit object name with this UI.
-- Copy and paste VRC_Trigger trigger definitions.
-    - To copy, select entries and press "Copy to clipboard" button.
-    - It stores data to system clipboard as text
-    - To paste, press "Paste from to clipboard" button. It read clipboard and adds entries to the end of trigger list.
-    - You can paste to another Unity project. Though, GameObject reference becomes "None". So you should check pasted contents.
-    ("instanceID" might much accidentally. in that case trigger refers inappropriate object.)
+## Features
 
+### Reorder list
+
+SubInspector provides reorder UI for list items.
+
+Supported components:
+
+| Component     | list                             |
+|---------------|----------------------------------|
+| `VRC_Trigger` | `Triggers`                       |
+| `Button`      | `OnClick`                        |
+| `InputField`  | `OnValueChanged` and `OnEndEdit` |
+
+
+Note:
+For `Button` and `InputField`, There's another powerful editor extension [EasyEventEditor](https://github.com/Merlin-san/EasyEventEditor) by Merlin-san.)
+
+### Copy and paste some parts of VRC_Trigger
+
+You can copy some parts of VRC_Trigger definitions and paste to other VRC_Trigger.
+
+- To copy
+    1. Select trigger entries that you want to copy. 
+    2. Press `Copy to clipboard` button.
+    - It stores data to system clipboard as text. Technically in some JSON format.
+- To paste
+    1. Select target GameObject. If not having VRC_Trigger yet, add it.
+    2. Press `Paste from to clipboard` button.
+    - It read clipboard and adds entries to the end of trigger list.
+
+Note: 
+You can paste to another Unity project. 
+Though, GameObject reference becomes "None".
+("instanceID" might much accidentally. in that case trigger refers inappropriate object.)
+Anyway you should check pasted contents.
+
+### Inspector edit protection
+
+It make GameObject and/or its components unchangeable (not editable) in Inspector.
+This is some protection against unexpected edit or to avoid miss operations.
+It only affects to Inspector. You can edit in another view, for example Scene view.
+
+Note:
+Technically it toggles [HideFlags](https://docs.unity3d.com/ScriptReference/HideFlags.html) NotEditable mask.
+
+
+### Display object path
+
+Display selected object path string from root of the scene.
+Currently, this is copyable read only text. You can not edit object name with this UI.
+
+Note: This is useful when directly editing animation clip.
 
 ## Licence etc.
 
