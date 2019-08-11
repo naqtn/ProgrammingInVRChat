@@ -88,7 +88,8 @@ namespace Iwsd
 
         ////////////////////////////////////////////////////////////
 
-        private static string GetGameObjectPath(GameObject anObject)
+        // REFINE move to utility class
+        internal static string GetGameObjectPath(GameObject anObject)
         {
             var buf = new System.Text.StringBuilder();
             GetGameObjectPathSub(anObject.transform, buf);
@@ -547,11 +548,15 @@ namespace Iwsd
             var cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
             var cmpTriggers = cmpJsonObj["Triggers"];
 
-            var expJsonTemplate = "{\"format\":\"" + jsonFormatName_partialObject + "\", \"hint\":{}, \"data\":{\"Triggers\":[]}}";
+            var expJsonTemplate = "{\"format\":\"" + jsonFormatName_partialObject + "\", objectType:null, \"hint\":{}, \"data\":{\"Triggers\":[]}}";
             var expJsonObj = SimpleJSON.JSON.Parse(expJsonTemplate);
             var expTriggers = expJsonObj["data"]["Triggers"];
 
             expJsonObj["hint"].Add("PlayerSettings.productName", PlayerSettings.productName);
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            expJsonObj["hint"].Add("scene.name", scene.name);
+            expJsonObj["hint"].Add("scene.path", scene.path);
+            expJsonObj["hint"].Add("objectPath", IwsdSubInspectorWindow.GetGameObjectPath(triggerComp.gameObject));
             expJsonObj["hint"].Add("created", DateTime.UtcNow.ToString("o"));
             expJsonObj.Add("objectType", triggerComp.GetType().FullName); // specify type by full name
 
