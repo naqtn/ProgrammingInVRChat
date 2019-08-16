@@ -27,6 +27,9 @@
 - Custom trigger
     - from Unity Animation event
     - ActivateCustomTrigger action
+    - from uGUI component.
+        - Button and TextField only
+        - Not supported when UI components are in newly spawned object.
 - Rondomized selection of actions with specified probabilitiy
 - Almost all actions (in basic use)
     - Animation actions (AnimationInt etc.)
@@ -107,6 +110,7 @@
     - PickupOrientation
 - Timer compatibility test
     - (not checked because of defects of original implantation)
+- Runtime reference replacement for spawned object to support uGUI
 
 
 ## Defects and known issues

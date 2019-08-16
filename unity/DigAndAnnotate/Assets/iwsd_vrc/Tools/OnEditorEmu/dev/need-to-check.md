@@ -5,6 +5,12 @@ Items Need to investigate original specs.
 
 ## Trigger
 
+### Check original behavior of the case parameterBytes is empty
+VRC_TriggerEditor seemes create empty parameterBytes when all parameter are zero.
+Does such action actually work at runtime?
+
+### Check what happens components found by FindObjectsOfTypeAll are in Prefab for modification
+
 ### CHECK What happends if multiple VRC_Trigger compnent exists in case of original VRChat client?
 Simply they do them work independently?
 

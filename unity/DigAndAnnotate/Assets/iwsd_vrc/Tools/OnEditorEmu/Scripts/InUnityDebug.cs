@@ -34,9 +34,12 @@ namespace Iwsd
         
             Setup_SceneDescriptor();
             Setup_TriggersComponents();
-
+            Setup_ReplaceTriggerRefference();
+            
             SpawnPlayerObject();
         }
+
+        ////////////////////////////////////////////////////////////
 
         static private void Setup_SceneDescriptor()
         {
@@ -64,7 +67,16 @@ namespace Iwsd
             LocalPlayerContext.SceneDescriptor = descriptor;
         }
 
+        ////////////////////////////////////////////////////////////
 
+        // https://answers.unity.com/questions/218429/how-to-know-if-a-gameobject-is-a-prefab.html
+        // (In latest Unity GetPrefabParent is obsolete.)
+        static private bool IsInPrefab(Component comp)
+        {
+            return (PrefabUtility.GetPrefabParent(comp.gameObject) == null)
+                && (PrefabUtility.GetPrefabObject(comp.gameObject.transform) != null);
+        }
+        
         // (see also. Execute_SpawnObject)
         static private void Setup_TriggersComponents()
         {
@@ -72,13 +84,8 @@ namespace Iwsd
             {
                 // Skip VRC_Trigger in prefab asset
                 // CHECK Do I have to skip ?
-                // 
-                // https://answers.unity.com/questions/218429/how-to-know-if-a-gameobject-is-a-prefab.html
-                // (In latest Unity GetPrefabParent is obsolete.)
-                bool isPrefabOriginal = (PrefabUtility.GetPrefabParent(triggerComp.gameObject) == null)
-                    && (PrefabUtility.GetPrefabObject(triggerComp.gameObject.transform) != null);
- 
-                if (isPrefabOriginal) {
+                if (IsInPrefab(triggerComp))
+                {
                     continue;
                 }
                 
@@ -89,6 +96,83 @@ namespace Iwsd
             }
         }
 
+        static private void Setup_ReplaceTriggerRefference()
+        {
+            int procCount = 0;
+            procCount += ReplaceTriggerRefferenceInUIEvent(typeof(UnityEngine.UI.Button), "m_OnClick");
+            procCount += ReplaceTriggerRefferenceInUIEvent(typeof(UnityEngine.UI.InputField), "m_OnValueChanged");
+            procCount += ReplaceTriggerRefferenceInUIEvent(typeof(UnityEngine.UI.InputField), "m_OnEndEdit");
+            Iwlog.Debug("VRC_Trigger references in UIEvents replaced for runtime. Count=" + procCount);
+        }
+
+        static private int ReplaceTriggerRefferenceInUIEvent(System.Type UIComponentType, string EventPropName)
+        {
+            int procCount = 0;
+            foreach (Component comp in UnityEngine.Resources.FindObjectsOfTypeAll(UIComponentType))
+            {
+                if (ReplaceTriggerRefferenceInUIEvent(comp, EventPropName))
+                {
+                    procCount++;
+                }
+            }
+            return procCount;
+        }
+
+        static private bool ReplaceTriggerRefferenceInUIEvent(Component comp, string EventPropName)
+        {
+            if (IsInPrefab(comp)) // CHECK Do I have to skip ? see. Setup_TriggersComponents
+            {
+                return false;
+            }
+
+            int procCount = 0;
+
+            // To modify persistent part of UnityEventBase, we must use persistent API.
+            var sComp = new SerializedObject(comp);
+            
+            var uiEvent = sComp.FindProperty(EventPropName);
+            var m_PersistentCalls = uiEvent.FindPropertyRelative("m_PersistentCalls");
+            var m_Calls = m_PersistentCalls.FindPropertyRelative("m_Calls");
+            for (int idx = m_Calls.arraySize - 1; 0 <= idx; idx--)
+            {
+                var persCall = m_Calls.GetArrayElementAtIndex(idx);
+                var m_Target = persCall.FindPropertyRelative("m_Target");
+                UnityEngine.Object targetObj = m_Target.objectReferenceValue;
+
+                if ((targetObj != null) && (targetObj.GetType() == typeof(VRCSDK2.VRC_Trigger)))
+                {
+                    var emuTrigger = ((Component)targetObj).GetComponent(typeof(Emu_Trigger));
+                    if (emuTrigger == null)
+                    {
+                        Iwlog.Error("emuTrigger == null");
+                    }
+                    else
+                    {
+                        m_Target.objectReferenceValue = emuTrigger;
+                        procCount++;
+                    }
+                }
+            }
+            if (0 < procCount)
+            {
+                sComp.ApplyModifiedPropertiesWithoutUndo();
+            }
+            
+            return (0 < procCount);
+        }
+
+        // UIEvent SerializedObject structure memo.
+        // in case of Button
+        // MonoBehaviour:   <= Button component
+        //   ...
+        //   m_OnClick:         <= inherited from UnityEvent
+        //     m_PersistentCalls:
+        //       m_Calls:           <= List<PersistentCall>
+        //       - m_Target: {fileID: 878055904}
+        //         m_MethodName: set_layer
+
+
+        
         ////////////////////////////////////////////////////////////
         
         static private GameObject SpawnFromPrefab(string path)
