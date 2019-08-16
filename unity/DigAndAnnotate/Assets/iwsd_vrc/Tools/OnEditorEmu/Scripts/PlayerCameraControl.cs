@@ -67,6 +67,7 @@ namespace Iwsd
 
             // move mouse cursor to center
             Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
             // Cursor.lockState = CursorLockMode.None;
         }
 
@@ -289,7 +290,7 @@ namespace Iwsd
             // incrementally add to the camera look
             mouseLook += smoothV;
             mouseLook.x = mouseLook.x % 360.0f;
-            mouseLook.y = mouseLook.y % 360.0f;
+            mouseLook.y = Mathf.Clamp(mouseLook.y, -90, 90);
             
             // mouse up-down => camera up-down
             // vector3.right means the x-axis
@@ -323,15 +324,22 @@ namespace Iwsd
         
         private void OperateToggleCursorLock()
         {
-            if (Input.GetKeyDown(KeyCode.Tab)) {
-                Cursor.lockState = (Cursor.lockState == CursorLockMode.Locked)? CursorLockMode.None: CursorLockMode.Locked;
+            if(Input.GetButtonUp("Cancel"))
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            if (Input.GetMouseButtonUp(0))
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
         }
         
         void Update()
         {
             RayOperation();
-            RotateByMouseInput();
+            if(!Cursor.visible) RotateByMouseInput();
             OperateToggleCursorLock();
             UpdatePositionOfHoldings();
         }

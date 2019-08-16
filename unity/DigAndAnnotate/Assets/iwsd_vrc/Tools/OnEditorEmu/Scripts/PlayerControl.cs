@@ -116,11 +116,7 @@ namespace Iwsd
         // (In UnitEditor ESC activates mouse cursor automatically. You can avoid this behavior by using alternative bind.)
         private void ToggleQuickMenuOperation()
         {
-            if (Input.GetButtonUp("Cancel")
-                #if UNITY_EDITOR
-                || Input.GetKeyDown(KeyCode.Q)
-                #endif
-                )
+            if (Input.GetKeyDown(KeyCode.Tab))
             {
                 Iwlog.Trace("Toggle QuickMenu");
                 if (QuickMenu.activeSelf)
