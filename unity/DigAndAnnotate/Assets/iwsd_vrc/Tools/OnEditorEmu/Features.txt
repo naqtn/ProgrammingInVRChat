@@ -14,11 +14,13 @@
     - player spawn position
 - Quick menu
     - (as world space canvas "diegetic UI")
-    - Toggle quick menu: ESC or Q
-        - (Unity editor unlocks mouse cursor when recieve ESC key. Q is for avoiding this behavior.)
+    - Toggle quick menu: TAB key
     - Operations
         - Respawn
         - Quit emulator program
+- mouse cursor capture
+    - Press ESC key to exit from emulator
+    - Click Game window to go back emulator
 
 ### Trigger-action system
 
@@ -74,10 +76,12 @@
 
 ### Local player
 
-- world descriptor setting
+- support VRC_SceneDescriptor setting
     - respawn height
-    - jump power
     - Reference camera
+- support VRC_PlayerMods
+    - jump power
+    - speed
 - Draw outline shape for interactable and pickupable objects
 - Interact raycast length
 - player object collider
@@ -103,6 +107,12 @@
     - PickupOrientation
 - Timer compatibility test
     - (not checked because of defects of original implantation)
+
+
+## Defects and known issues
+- Player collider layer miss setuped?
+    - Emu_Player prefab has Colliders/{PlayerLocalLayer, PlayerLayer} . And in current implantation PlayerLayer is initially enabled. 
+- NullReferenceException occurs when VRC_SceneDescriptor is missing
 
 
 ## Tuning

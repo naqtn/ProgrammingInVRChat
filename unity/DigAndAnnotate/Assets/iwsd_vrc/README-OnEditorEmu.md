@@ -8,7 +8,7 @@ It's aim is improving debugging process of VRChat world.
 You can debug VRChat worlds with Unity editor functionality.
 
 
-For example, to make complex gimmicks in a VRChat world, you may use Unity animation
+For example, to make complex mechanics in a VRChat world, you may use Unity animation
 as timeline control and state machine and use Animation Events to trigger VRChat components.
 
 In such case, testing combination of Unity animations and VRChat components can not be done
@@ -41,12 +41,11 @@ Don't use with serious projects withdout backup.
     * mouse movement to turn and look up and down.
     * Space key to jump
 * You can interact with a object by centering it and press left mouse button.
-* Q key to open quick menu
-    * (ESC also open quick menu like original VRChat client.
-      But in Unity editor, ESC also activates mouse cursor automatically. You can avoid this behavior by using Q key.)
+* TAB key to open quick menu
     * You can respawn player and Quit emulator via quick menu
-* TAB key to toggle mouse cursor
+* ESC key to bring back mouse cursor for Unity editor operation.
     * While mouse cursor appears, you can operate Unity editor ordinally in play mode.
+* Click Game window to to use mouse for player operation.
 * You can also start and stop emulator by Unity play button.
 * You must diable "Enabled" checkbox in "Emulator Setting" befor publish your world using "Build Control Panel" of VRChat SDK.
     * (Or publish button starts this emulator in inconsistent way)
@@ -59,7 +58,7 @@ Don't use with serious projects withdout backup.
 
 * Currently only for single player
     * This means it doesn't care broadcast type at all.
-* trigers and actions implementation status :
+* Trigers and actions implementation status :
     * almost all actions are implemented.
     * With the exception of Relay and VRC component dependent trigger (OnVideoStart etc.), almost all Triggers are implemented.
     * (See Features.txt (and/or Emu_Trigger.cs) for details.)

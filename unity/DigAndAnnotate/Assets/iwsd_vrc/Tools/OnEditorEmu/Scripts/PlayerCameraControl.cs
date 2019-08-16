@@ -43,6 +43,9 @@ namespace Iwsd
         // smooth the mouse moving
         private Vector2 smoothV;
 
+        const float CAMERA_ANGLE_HIGH_BOUND = 120;
+        const float CAMERA_ANGLE_LOW_BOUND = -120;
+
         void Start()
         {
             if (character == null) {
@@ -68,7 +71,6 @@ namespace Iwsd
             // move mouse cursor to center
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
-            // Cursor.lockState = CursorLockMode.None;
         }
 
         // MEMO [raycast basics (jp)](http://megumisoft.hatenablog.com/entry/2015/08/13/172136)
@@ -290,7 +292,7 @@ namespace Iwsd
             // incrementally add to the camera look
             mouseLook += smoothV;
             mouseLook.x = mouseLook.x % 360.0f;
-            mouseLook.y = Mathf.Clamp(mouseLook.y, -90, 90);
+            mouseLook.y = Mathf.Clamp(mouseLook.y, CAMERA_ANGLE_LOW_BOUND, CAMERA_ANGLE_HIGH_BOUND);
             
             // mouse up-down => camera up-down
             // vector3.right means the x-axis
@@ -301,7 +303,7 @@ namespace Iwsd
             var player = character.GetComponent<PlayerControl>();
             player.RightArm.transform.localRotation = transform.localRotation;
             
-            // mouse left-right => player character lef-right
+            // mouse left-right => player character left-right
             character.transform.localRotation = Quaternion.AngleAxis(mouseLook.x, character.transform.up);
         }
 
@@ -324,11 +326,14 @@ namespace Iwsd
         
         private void OperateToggleCursorLock()
         {
+            // ESC from emulator
             if(Input.GetButtonUp("Cancel"))
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
+
+            // Go back to emulator
             if (Input.GetMouseButtonUp(0))
             {
                 Cursor.lockState = CursorLockMode.Locked;
@@ -339,7 +344,10 @@ namespace Iwsd
         void Update()
         {
             RayOperation();
-            if(!Cursor.visible) RotateByMouseInput();
+            if (!Cursor.visible)
+            {
+                RotateByMouseInput();
+            }
             OperateToggleCursorLock();
             UpdatePositionOfHoldings();
         }
