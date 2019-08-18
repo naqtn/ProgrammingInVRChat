@@ -145,6 +145,12 @@ namespace Iwsd
             var ctrl = PlayerCamera.GetComponent<PlayerCameraControl>();
             ctrl.SetRotation(destination.rotation);
         }
+
+        public void StartCoroutineUnderPlayer(System.Collections.IEnumerator coroutine)
+        {
+            StartCoroutine(coroutine);
+        }
+
     }
 
 }

@@ -9,6 +9,8 @@ namespace Iwsd
     interface ILocalPlayer
     {
         void TeleportTo(Transform destination);
+
+        void StartCoroutineUnderPlayer(System.Collections.IEnumerator coroutine);
     }
 
     
@@ -183,6 +185,11 @@ namespace Iwsd
             return null;
         }
 
+
+        public static void StartCoroutineUnderPlayer(System.Collections.IEnumerator coroutine)
+        {
+            LocalPlayer.StartCoroutineUnderPlayer(coroutine);
+        }
     }
 
 }

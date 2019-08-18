@@ -31,6 +31,7 @@
         - Button and TextField only
         - Not supported when UI components are in newly spawned object.
 - Rondomized selection of actions with specified probabilitiy
+- Delay before action
 - Almost all actions (in basic use)
     - Animation actions (AnimationInt etc.)
     - Physics actions (AddVelocity etc.)
@@ -96,7 +97,6 @@
 - Triggers
     - Relay
     - VRC component dependent trigger (OnVideoStart etc.)
-- Delay before action
 - Extra (minor) featurs of action
     - TeleportPlayer AlignRoomToDestination switch
     - SendRPC (extra featurs. player ID feature etc.)

@@ -409,6 +409,31 @@ namespace Iwsd
 
         private void ExecuteTriggerActions(VRCSDK2.VRC_Trigger.TriggerEvent triggerEvent)
         {
+            var afterSeconds = triggerEvent.AfterSeconds;
+            if (afterSeconds != 0.0f)
+            {
+                var coroutine = ExecuteTriggerActionsCoroutine(triggerEvent, afterSeconds);
+
+                // Original implementation allows trigger action execution after inactivating GameObject that holds VRC_Trigger.
+                // So, coroutine must be handled by another long life GameObject.
+                // I select LocalPlayer object to do that.
+                LocalPlayerContext.StartCoroutineUnderPlayer(coroutine);
+            }
+            else
+            {
+                ExecuteTriggerActionsAfterDelayStep(triggerEvent);
+            }
+        }
+
+        private System.Collections.IEnumerator ExecuteTriggerActionsCoroutine(VRCSDK2.VRC_Trigger.TriggerEvent triggerEvent, float afterSeconds)
+        {
+            yield return new WaitForSeconds(afterSeconds);
+            ExecuteTriggerActionsAfterDelayStep(triggerEvent);
+            yield break;
+        }
+
+        private void ExecuteTriggerActionsAfterDelayStep(VRCSDK2.VRC_Trigger.TriggerEvent triggerEvent)
+        {
             if (triggerEvent.Probabilities.Length == 0)
             {
                 foreach (var vrcEvent in triggerEvent.Events)
