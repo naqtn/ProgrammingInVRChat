@@ -231,7 +231,10 @@ namespace Iwsd
             // Method
             buf.Append("\n");
             buf.Append("uGUI callable Methods  (without wellknown) {\n");
-            foreach (MethodInfo info in type.GetMethods())
+
+            // https://stackoverflow.com/questions/5030537/gettype-getmethods-returns-no-methods-when-using-a-bindingflag
+            var mflags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            foreach (MethodInfo info in type.GetMethods(mflags))
             {
                 if (!IsWellKnown(info.DeclaringType)
                     && Is_uGUICallable(info))
@@ -240,6 +243,10 @@ namespace Iwsd
 
                     buf.Append("  ");
                     buf.Append(info.Name);
+                    if (!info.IsPublic)
+                    {
+                        buf.Append(info.IsPrivate? " <private>": " <internal>");
+                    }
                     if (1 <= parameters.Length)
                     {
                         buf.Append(" , Parameter0='");
@@ -339,8 +346,19 @@ namespace Iwsd
 
         static bool Is_uGUICallable(PropertyInfo info)
         {
-            return info.CanWrite
-                && typeof(UnityEngine.Object).IsAssignableFrom(info.PropertyType);
+            if (!info.CanWrite)
+            {
+                return false;
+            }
+            var ptype = info.PropertyType;
+            if (!(ptype.Equals(typeof(float))
+                  || ptype.Equals(typeof(int))
+                  || ptype.Equals(typeof(string))
+                  || typeof(UnityEngine.Object).IsAssignableFrom(ptype)))
+            {
+                return false;
+            }
+            return true;
         }
         
         static bool Is_uGUICallable(MethodInfo info)
@@ -348,7 +366,8 @@ namespace Iwsd
             ParameterInfo[] parameters = info.GetParameters();
 
             if (!info.ReturnType.Equals(typeof(void))
-                || !info.IsPublic
+                // || !info.IsPublic  // Actually, private could be called!
+                || info.IsSpecialName
                 || info.IsStatic
                 || info.IsGenericMethod
                 || (1 < parameters.Length))
