@@ -6,7 +6,8 @@
 
 - WASD move
 - mouse to view direction control
-- mouse click to Interact to a object
+- mouse click to interact to an object
+    - pickup, interact
 - Pickup operation
     - pickup, drop
     - use down
@@ -18,9 +19,17 @@
     - Operations
         - Respawn
         - Quit emulator program
+        - Select player collider
 - mouse cursor capture
     - Press ESC key to exit from emulator
     - Click Game window to go back emulator
+- Player collider
+    - For locomotion (cause OnAvatarHit)
+    - For physics collision triggers (OnEnterTrigger etc.)
+        - PlayerLocal layer (default)
+        - Player layer (for emulate other player of multiplay)
+        - None (disable collider. OnAvatarHit collider is still alive)
+
 
 ### Trigger-action system
 

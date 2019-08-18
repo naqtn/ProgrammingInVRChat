@@ -11,6 +11,8 @@ namespace Iwsd
         void TeleportTo(Transform destination);
 
         void StartCoroutineUnderPlayer(System.Collections.IEnumerator coroutine);
+
+        void ChangeColliderSetup(string name);
     }
 
     
@@ -189,6 +191,11 @@ namespace Iwsd
         public static void StartCoroutineUnderPlayer(System.Collections.IEnumerator coroutine)
         {
             LocalPlayer.StartCoroutineUnderPlayer(coroutine);
+        }
+
+        public static void ChangeColliderSetup(string name)
+        {
+            LocalPlayer.ChangeColliderSetup(name);
         }
     }
 

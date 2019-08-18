@@ -20,5 +20,10 @@ namespace Iwsd
             Application.Quit();
             #endif
         }
+
+        public void ExecuteChangeColliderSetup(string name)
+        {
+            LocalPlayerContext.ChangeColliderSetup(name);
+        }
     }
 }

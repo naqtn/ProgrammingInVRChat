@@ -18,6 +18,7 @@ namespace Iwsd
         public GameObject RightHoldPosition;
         public GameObject EventSystemHolder;
         public GameObject QuckMenuInitLoc;
+        public GameObject Colliders;
 
         // Quick Menu object comes from a prefab
         // REFINE Is it needed to define quick menu solely (or separately) in other prefab ?
@@ -65,7 +66,8 @@ namespace Iwsd
             MovePlayerOperation();
         }
 
-        
+        // from CharacterController
+        // CharacterController has its own CapsuleCollider internally.
         void OnControllerColliderHit(ControllerColliderHit hit)
         {
             foreach (var triggerComp in hit.gameObject.GetComponents<Emu_Trigger>())
@@ -134,7 +136,7 @@ namespace Iwsd
 
         
         ////////////////////////////////////////////////////////////
-        // LocalPlayer implementation
+        // ILocalPlayer implementation
         
         public void TeleportTo(Transform destination)
         {
@@ -151,6 +153,33 @@ namespace Iwsd
             StartCoroutine(coroutine);
         }
 
+        public void ChangeColliderSetup(string name)
+        {
+            var colliders = Colliders.transform;
+
+            Transform sel;
+            if (name == "None")
+            {
+                sel = null;
+            }
+            else
+            {
+                sel = colliders.Find(name);
+                if (sel == null)
+                {
+                    Iwlog.Error("unknown ColliderSetup. name='" + name + "'");
+                    return;
+                }
+            }
+
+            foreach (Transform c in colliders)
+            {
+                // I prefer SetActive to collider component enabled.
+                // Because this is not so often operation and SetActive can change visual component also.
+                c.gameObject.SetActive(c == sel);
+            }
+            
+        }
     }
 
 }
