@@ -193,6 +193,8 @@ namespace Iwsd
             RegisterEditor("VRCSDK2.VRC_Trigger", typeof(VRC_TriggerCopyPasteEditor));
             // RegisterEditor("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaSimpleEditor)});
             RegisterEditor("VRCSDK2.scripts.Scenes.VRC_Panorama", typeof(VRC_PanoramaOrderEditor));
+
+            RegisterEditor("UnityEngine.TextMesh", typeof(TextMeshTextEditor));
         }
 
         public static void RegisterEditor(string typeFullName, Type editorType)
@@ -914,4 +916,128 @@ namespace Iwsd
         }
     }
 
+
+    class TextMeshTextEditor : Iwsd.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+
+            serializedObject.Update();
+
+            EditorGUI.indentLevel++;
+
+            var text = serializedObject.FindProperty("m_Text");
+            text.stringValue = EditorGUILayout.TextArea(text.stringValue, new GUIStyle(GUI.skin.textArea){wordWrap = true});
+
+            EditorGUI.indentLevel--;
+
+            serializedObject.ApplyModifiedProperties();
+        }
+    }
+
+
+    class PropertyDump : Iwsd.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+            // serializedObject.Update();
+
+            DumpProperties(serializedObject);
+        }
+
+        // https://forum.unity.com/threads/enumarting-serializedproperty-throws-an-exception.511310/
+        // https://forum.unity.com/threads/loop-through-serializedproperty-children.435119/
+        // 
+        // MEMO: Since Unity2018.3, property.objectReferenceValue is 0 for both Missing and None case.
+        // [Unity2018.3でのMissingが検出できない](https://teratail.com/questions/167668)
+        // Check child property "m_FileID", its intValue is 0 for None, otherwise Missing.
+        void DumpProperties(SerializedObject obj)
+        {
+            var s = DumpProperties(obj, 50);
+            
+            EditorGUILayout.TextArea(s, new GUIStyle(GUI.skin.textArea){wordWrap = true});
+        }
+        
+        string DumpProperties(SerializedObject obj, int limit)
+        {
+            SerializedProperty prop = obj.GetIterator();
+            var buf = new System.Text.StringBuilder();
+            int skipUntil = -1;
+            
+            // not well at end of child propeties
+            // foreach (var item in property) {
+            //     SerializedProperty prop = (SerializedProperty)item;
+
+            while (prop.Next(true))
+            {            
+                if (--limit < 0)
+                {
+                    buf.Append("...(snip tail)...\n");
+                    break;
+                }
+                
+                if (prop.depth <= skipUntil)
+                {
+                    skipUntil = -1;
+                }
+
+                if (skipUntil < 0)
+                {
+                    PrintPropertyItself(prop, buf);
+
+                    // if (prop.propertyType == SerializedPropertyType.String)
+                    // {
+                    //     skipUntil = prop.depth;
+                    //     Indent(prop.depth, buf);
+                    //     buf.Append("(content omitted)\n");
+                    // }
+
+                }
+            }
+
+            return buf.ToString();
+        }
+
+        void PrintPropertyItself(SerializedProperty prop, System.Text.StringBuilder buf)
+        {
+            Indent(prop.depth, buf);
+            buf.Append(prop.propertyType);
+            buf.Append(": '");
+            buf.Append(prop.name);
+            buf.Append("', '");
+            buf.Append(prop.propertyPath);
+            buf.Append("'");
+                    
+            switch (prop.propertyType)
+            {
+                case SerializedPropertyType.String:
+                    buf.Append(", value='");
+                    buf.Append(prop.stringValue);
+                    buf.Append("'");
+                    break;
+                            
+                case SerializedPropertyType.Integer:
+                    buf.Append(", value='");
+                    buf.Append(prop.intValue);
+                    buf.Append("'");
+                    break;
+                            
+                default:
+                    break;
+            }
+                    
+            buf.Append("\n");
+        }
+
+        private void Indent(int count, System.Text.StringBuilder buf)
+        {
+            while (0 < count-- )
+            {
+                buf.Append("  ");
+            }
+        }
+
+    }
 }

@@ -34,6 +34,7 @@ Supported components:
 Note:
 For `Button` and `InputField`, There's another powerful editor extension [EasyEventEditor](https://github.com/Merlin-san/EasyEventEditor) by Merlin-san.)
 
+
 ### Copy and paste some parts of VRC_Trigger
 
 You can copy some parts of VRC_Trigger definitions and paste to other VRC_Trigger.
@@ -53,7 +54,8 @@ Though, GameObject reference becomes "None".
 ("instanceID" might much accidentally. in that case trigger refers inappropriate object.)
 Anyway you should check pasted contents.
 
-### Inspector edit protection
+
+### Protection from Inspector edit 
 
 It make GameObject and/or its components unchangeable (not editable) in Inspector.
 This is some protection against unexpected edit or to avoid miss operations.
@@ -69,6 +71,14 @@ Display selected object path string from root of the scene.
 Currently, this is copyable read only text. You can not edit object name with this UI.
 
 Note: This is useful when directly editing animation clip.
+
+
+### Edit text in wider UI for TextMesh
+
+It's restricted 3 lines in original inspector UI for TextMesh text.
+It's inconvenient to write longer text.
+SubInspector provide wider (i.e. expandable) and word wrapping text area.
+
 
 ## Licence etc.
 
