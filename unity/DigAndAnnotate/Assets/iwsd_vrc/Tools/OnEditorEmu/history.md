@@ -15,3 +15,5 @@
 - Add support delay of trigger execution
 - Add player collider selection feature
     - Select one from LocalPlayer layer (default), Player layer, None at quick menu
+- Add Interact() method support.
+    - It enables OnInteract trigger from Animation Event and uGUI Event.

@@ -131,12 +131,19 @@ namespace Iwsd
         // VRCSDK2.VRC_Trigger+TriggerType
 
         // Custom,  // from program (Animation, uGUI)
-        void ExecuteCustomTrigger(string name)
+        public void ExecuteCustomTrigger(string name)
         {
             Iwlog.Trace("Emu_Trigger:ExecuteCustomTrigger name='" + name + "'");
             ExecuteTriggers_Named(VRCSDK2.VRC_Trigger.TriggerType.Custom, name);
         }
 
+        // OnInteract from program (Animation, uGUI)
+        public /*override*/ void Interact()
+        {
+            Iwlog.Trace("Emu_Trigger:Interact");
+            ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnInteract);
+        }
+        
         // Relay,
         // x OnEnable, // See above. timer reset
         // x OnDestroy, // DestroyObject action

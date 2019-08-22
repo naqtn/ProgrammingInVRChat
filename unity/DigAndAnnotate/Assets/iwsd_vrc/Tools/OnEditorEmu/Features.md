@@ -33,12 +33,6 @@
 
 ### Trigger-action system
 
-- Custom trigger
-    - from Unity Animation event
-    - ActivateCustomTrigger action
-    - from uGUI component.
-        - Button and TextField only
-        - Not supported when UI components are in newly spawned object.
 - Rondomized selection of actions with specified probabilitiy
 - Delay before action
 - Almost all actions (in basic use)
@@ -55,6 +49,15 @@
     - Resource access actions
         - SetMaterial
         - Spawn
+- Custom trigger
+    - ActivateCustomTrigger action
+    - from Unity Animation event
+    - from uGUI component.
+        - Button and TextField only
+        - Not supported when UI components are in newly spawned object.
+- Interact
+    - invoke from player raycast
+    - invoke from program (Animation, uGUI)
 - Pickup, UseDown, UseUp, Drop triggers
 - Timer
     - Compatibility is not checked because of defects of original implantation
@@ -70,6 +73,12 @@
     - Compatibility test for OnDestroy is not completed because of defects of original implantation
         - https://vrchat.canny.io/bug-reports/p/ondestroy-trigger-does-not-work-before-second-player-joins-the-world-instance
 - Key
+
+
+### Enviroment
+- Adjust "Fixed Timestep" setting in "Project Settings" to be compatible
+
+
 
 ## Not implemented
 
@@ -96,9 +105,7 @@
     - jump power
     - speed
 - Draw outline shape for interactable and pickupable objects
-- Interact raycast length
-- player object collider
-- player object layer
+- Interact raycast length limitation
 
 
 ### Trigger-action system
@@ -120,6 +127,10 @@
 - Timer compatibility test
     - (not checked because of defects of original implantation)
 - Runtime reference replacement for spawned object to support uGUI
+
+
+### Enviroment
+- FPS (targetting 90)
 
 
 ## Defects and known issues
