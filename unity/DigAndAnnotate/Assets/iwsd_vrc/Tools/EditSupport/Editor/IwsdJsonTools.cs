@@ -97,56 +97,84 @@ namespace Iwsd
 
         private string ExportSelected(VRCSDK2.VRC_Trigger triggerComp)
         {
+            JsonOperationResult r = JsonTools.ExportPartial_VRC_Trigger_Trigger(triggerComp, UserSelects);
+            OpResultType = r.Type;
+            OpResultMessage = r.Message;
+            return r.Output;
+        }
+
+        private void ImportToTail(string importString, VRCSDK2.VRC_Trigger triggerComp)
+        {
+            JsonOperationResult r = JsonTools.ImportPartial_VRC_Trigger_Trigger(importString, triggerComp);
+            OpResultType = r.Type;
+            OpResultMessage = r.Message;
+        }
+
+    }
+
+
+    public class JsonOperationResult
+    {
+        // REFINE define own enum?
+        public MessageType Type;
+
+        public string Message;
+
+        public string Output;
+
+        internal JsonOperationResult(MessageType type, string message)
+        {
+            this.Type = type;
+            this.Message = message;
+        }
+    }
+
+    public class JsonTools
+    {
+        JsonTools()
+        {
+        }
+
+        public delegate JsonOperationResult JsonModifier(SimpleJSON.JSONNode input, SimpleJSON.JSONNode output);
+
+
+        const string jsonFormatName_partialObject = "iwsd_vrc/Tools/PartialObject/v1.0";
+
+        static public JsonOperationResult ExportPartial(UnityEngine.Component targetComp, JsonModifier jsonModifier)
+        {
             // Conver target object to JSON object
-            //   (It can take any System.Object as target) 
-            //   Conver to JSON string from 
-            var cmpJsonStr = JsonUtility.ToJson(triggerComp, false);
-            //   Convert to JSON object from JSON string 
-            var cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
+            //   (It can take any System.Object as target)
+            //   Conver to JSON string from
+            string cmpJsonStr = JsonUtility.ToJson(targetComp, false);
+            //   Convert to JSON object from JSON string
+            SimpleJSON.JSONNode cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
 
             // Prepare export JSON object from template JSON string
-            var expJsonTemplate = "{\"format\":\"" + jsonFormatName_partialObject + "\", objectType:null, \"hint\":{}, \"data\":{\"Triggers\":[]}}";
-            var expJsonObj = SimpleJSON.JSON.Parse(expJsonTemplate);
+            string expJsonTemplate = "{\"format\":\"" + jsonFormatName_partialObject + "\", objectType:null, \"hint\":{}, \"data\":{}";
+            SimpleJSON.JSONNode expJsonObj = SimpleJSON.JSON.Parse(expJsonTemplate);
 
             // Add meta info to export JSON object
             expJsonObj["hint"].Add("PlayerSettings.productName", PlayerSettings.productName);
             var scene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
             expJsonObj["hint"].Add("scene.name", scene.name);
             expJsonObj["hint"].Add("scene.path", scene.path);
-            expJsonObj["hint"].Add("objectPath", IwsdSubInspectorWindow.GetGameObjectPath(triggerComp.gameObject));
+            expJsonObj["hint"].Add("objectPath", IwsdSubInspectorWindow.GetGameObjectPath(targetComp.gameObject));
             expJsonObj["hint"].Add("created", DateTime.UtcNow.ToString("o"));
-            expJsonObj.Add("objectType", triggerComp.GetType().FullName); // specify type by full name
+            expJsonObj.Add("objectType", targetComp.GetType().FullName); // specify type by full name
 
-            // Export. Build export object as JSON object
-            //   This case is partial object format. so
-            //   Copy from target JSON object to export JSON object,
-            var expTriggers = expJsonObj["data"]["Triggers"];
-            var cmpTriggers = cmpJsonObj["Triggers"];
-            int count = 0;
-            for (int i = 0; i < UserSelects.Count; i++)
-            {
-                if (UserSelects[i]) {
-                    expTriggers.Add(cmpTriggers[i]);
-                    count++;
-                }
-            }
-
-            if (count == 0)
-            {
-                OpResultType = MessageType.Warning;
-                OpResultMessage = "No entries selected to copy";
-            }
-            else
-            {
-                OpResultType = MessageType.Info;
-                OpResultMessage = "Copied. " + count + " entries to clipboard";
-            }
+            // Copy partial elements from target JSON object to export JSON object
+            JsonOperationResult r = jsonModifier(cmpJsonObj, expJsonObj);
 
             // Convert to portable string (from export JSON object to JSON string)
-            return expJsonObj.ToString();
+            r.Output = expJsonObj.ToString();
+
+            return r;
+
+            // TODO use EditorJsonUtility
         }
 
-        private void ImportToTail(string importString, VRCSDK2.VRC_Trigger triggerComp)
+
+        static public JsonOperationResult ImportPartial(string importString, UnityEngine.Component targetComp, JsonModifier jsonModifier)
         {
             // Parse importing JSON string to JSON object
             SimpleJSON.JSONNode expJsonObj;
@@ -156,69 +184,100 @@ namespace Iwsd
             }
             catch (Exception e)
             {
-                OpResultType = MessageType.Warning;
-                OpResultMessage = "not appropriate data in clipboard";
-                return;
+                Debug.LogException(e);
+                return new JsonOperationResult(MessageType.Warning, "not appropriate data");
             }
 
             // Check format
             if ((expJsonObj["format"] != jsonFormatName_partialObject)
-                || (expJsonObj["objectType"] != triggerComp.GetType().FullName))
+                || (expJsonObj["objectType"] != targetComp.GetType().FullName))
             {
-                OpResultType = MessageType.Error;
-                OpResultMessage = "Unknown or unsupported format data in clipboard";
-                return;
+                return new JsonOperationResult(MessageType.Error, "Unknown or unsupported format data");
             }
 
             // Convert target object to JSON object
             //   Convert to JSON string
-            var cmpJsonStr = JsonUtility.ToJson(triggerComp, false);
+            var cmpJsonStr = JsonUtility.ToJson(targetComp, false);
             //   Convert to JSON object
             var cmpJsonObj = SimpleJSON.JSON.Parse(cmpJsonStr);
 
-            // Import.
-            //   Extract importing JSON object info.
-            //   Digest into target object.
-            var cmpTriggers = cmpJsonObj["Triggers"];
-            var expTriggers = expJsonObj["data"]["Triggers"];
-            for (int i = 0; i < expTriggers.Count; i++)
-            {
-                cmpTriggers.Add(expTriggers[i]);
-            }
+            JsonOperationResult r = jsonModifier(cmpJsonObj, expJsonObj);
 
             // Modify target object
             //   Convert modified target object to JSON string
             string modified = cmpJsonObj.ToString();
             //   Load/merge from JSON string
-            Undo.RecordObject(triggerComp, "Paste to VRC_Trigger");
-            JsonUtility.FromJsonOverwrite(modified, triggerComp);
+            Undo.RecordObject(targetComp, "Paste to VRC_Trigger");
+            JsonUtility.FromJsonOverwrite(modified, targetComp);
 
-            // Preprocess
-            // (This could be done in while import step.)
-            bool advanced = false;
-            for (int i = 0; i < triggerComp.Triggers.Count; i++)
-            {
-                switch (triggerComp.Triggers[i].BroadcastType)
-                {
-                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.AlwaysUnbuffered:
-                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.OwnerUnbuffered:
-                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.AlwaysBufferOne:
-                    case VRCSDK2.VRC_EventHandler.VrcBroadcastType.OwnerBufferOne:
-                        break;
-                    default:
-                        advanced = true;
-                        break;
-                }
-            }
-            if (advanced)
-            {
-                triggerComp.UsesAdvancedOptions = true;
-            }
+            return r;
 
-            OpResultType = MessageType.Info;
-            OpResultMessage = expTriggers.Count + " entrie(s) added successfully";
-            return;
         }
 
-    }
+
+        ////////////////////////////////////////
+
+        static public JsonOperationResult ExportPartial_VRC_Trigger_Trigger(UnityEngine.Component targetComp, List<bool> selection)
+        {
+
+            return ExportPartial(targetComp, (SimpleJSON.JSONNode cmpJsonObj, SimpleJSON.JSONNode expJsonObj) => {
+                    var cmpTriggers = cmpJsonObj["Triggers"];
+                    var expTriggers = expJsonObj["data"]["Triggers"].AsArray;
+
+                    int count = 0;
+                    for (int i = 0; i < selection.Count; i++)
+                    {
+                        if (selection[i]) {
+                            expTriggers.Add(cmpTriggers[i]);
+                            count++;
+                        }
+                    }
+
+                    return
+                    (count == 0)?
+                    new JsonOperationResult(MessageType.Warning, "No entries selected to copy")
+                    : new JsonOperationResult(MessageType.Info, "Copied. (" + count + " entries)");
+                });
+
+        }
+
+        static public JsonOperationResult ImportPartial_VRC_Trigger_Trigger(string importString, VRCSDK2.VRC_Trigger triggerComp)
+        {
+            return ImportPartial(importString, triggerComp, (SimpleJSON.JSONNode cmpJsonObj, SimpleJSON.JSONNode expJsonObj) => {
+                    // Import.
+                    //   Extract importing JSON object info.
+                    //   Digest into target object.
+                    var cmpTriggers = cmpJsonObj["Triggers"];
+                    var expTriggers = expJsonObj["data"]["Triggers"];
+                    for (int i = 0; i < expTriggers.Count; i++)
+                    {
+                        cmpTriggers.Add(expTriggers[i]);
+                    }
+
+
+                    bool advanced = false;
+                    foreach (var c in cmpTriggers.Values)
+                    {
+                        switch ((VRCSDK2.VRC_EventHandler.VrcBroadcastType)c["BroadcastType"].AsLong)
+                        {
+                            case VRCSDK2.VRC_EventHandler.VrcBroadcastType.AlwaysUnbuffered:
+                            case VRCSDK2.VRC_EventHandler.VrcBroadcastType.OwnerUnbuffered:
+                            case VRCSDK2.VRC_EventHandler.VrcBroadcastType.AlwaysBufferOne:
+                            case VRCSDK2.VRC_EventHandler.VrcBroadcastType.OwnerBufferOne:
+                                break;
+                            default:
+                                advanced = true;
+                                break;
+                        }
+                    }
+                    if (advanced)
+                    {
+                        cmpJsonObj["UsesAdvancedOptions"] = true;
+                    }
+
+                    return new JsonOperationResult(MessageType.Info,
+                                                   expTriggers.Count + " entrie(s) added successfully");
+                });
+         }
+     }
 }
