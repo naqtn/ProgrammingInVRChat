@@ -46,7 +46,10 @@ namespace Iwsd
     
         internal static VRCSDK2.VRC_SceneDescriptor SceneDescriptor
         {
-            // get;
+            get
+            {
+                return _SceneDescriptor;
+            }
             set {
                 _SceneDescriptor = value;
 

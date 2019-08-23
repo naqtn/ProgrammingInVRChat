@@ -18,6 +18,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
 
 namespace Iwsd
 {
@@ -29,6 +30,9 @@ namespace Iwsd
 
         [SerializeField]
         public float smoothing = 2.0f;
+
+        [HideInInspector]
+        public GameObject refCameraObj = null;
 
         // mouse holizontal move to turn left-right
         private  GameObject character;
@@ -56,6 +60,12 @@ namespace Iwsd
                 playerCamera = GetComponent<Camera>();
                 if (playerCamera == null) {
                     Iwlog.Error(gameObject, "Camera not found.");
+                } else
+                {
+                    if(refCameraObj != null)
+                    {
+                        CopyCameraSettings(refCameraObj);
+                    }
                 }
             }
 
@@ -71,6 +81,28 @@ namespace Iwsd
             // move mouse cursor to center
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+        }
+
+        public void CopyCameraSettings(GameObject refCameraObj)
+        {
+            Camera refCamera = refCameraObj.GetComponent<Camera>();
+            if(playerCamera != null)
+            {
+                playerCamera.nearClipPlane = refCamera.nearClipPlane;
+                playerCamera.farClipPlane = refCamera.farClipPlane;
+                playerCamera.clearFlags = refCamera.clearFlags;
+                playerCamera.backgroundColor = refCamera.backgroundColor;
+                playerCamera.allowHDR = refCamera.allowHDR;
+            }
+
+            PostProcessLayer refCameraLayer = refCamera.GetComponent<PostProcessLayer>();
+            if(refCameraLayer != null)
+            {
+                PostProcessLayer playerCameraLayer = playerCamera.gameObject.AddComponent<PostProcessLayer>();
+                playerCameraLayer.volumeTrigger = playerCamera.transform;
+                playerCameraLayer.volumeLayer = refCameraLayer.volumeLayer;
+                playerCameraLayer.Init((PostProcessResources)UnityEditor.AssetDatabase.LoadAssetAtPath("Assets/PostProcessing/PostProcessResources.asset", typeof(PostProcessResources)));
+            }
         }
 
         // MEMO [raycast basics (jp)](http://megumisoft.hatenablog.com/entry/2015/08/13/172136)
@@ -126,6 +158,7 @@ namespace Iwsd
         // memo:
         // http://wiki.unity3d.com/index.php/Silhouette-Outlined_Diffuse
         // [Outline Effect for Unity](https://forum.unity.com/threads/free-open-source-outline-effect.314362/)
+        // Outline effect used by VRChat: http://xroft666.blogspot.com/2015/07/glow-highlighting-in-unity.html
 
         void RayTest()
         {

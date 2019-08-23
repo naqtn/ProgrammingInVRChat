@@ -13,6 +13,7 @@
     - use down
 - world descriptor setting (not completed)
     - player spawn position
+	- reference camera (settings copied to the player camera including post processing)
 - Quick menu
     - (as world space canvas "diegetic UI")
     - Toggle quick menu: TAB key
@@ -20,6 +21,7 @@
         - Respawn
         - Quit emulator program
         - Select player collider
+	- Change player collider layer (Player & PlayerLocal)
 - mouse cursor capture
     - Press ESC key to exit from emulator
     - Click Game window to go back emulator
@@ -29,6 +31,8 @@
         - PlayerLocal layer (default)
         - Player layer (for emulate other player of multiplay)
         - None (disable collider. OnAvatarHit collider is still alive)
+- Player tracker support
+	- VRC UI Shape will correctly replace the world camera on associated canvases
 
 
 ### Trigger-action system
@@ -100,7 +104,6 @@
 
 - support VRC_SceneDescriptor setting
     - respawn height
-    - Reference camera
 - support VRC_PlayerMods
     - jump power
     - speed
