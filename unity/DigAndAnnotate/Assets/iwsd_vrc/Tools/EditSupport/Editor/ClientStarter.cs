@@ -436,6 +436,7 @@ namespace Iwsd
             }
             catch (Exception e)
             {
+                Debug.LogException(e);
                 return new Result(url, false, "Couldn't execute process properly. (Please check 'Client Path' in 'VRChat Setting')");
             }
 
