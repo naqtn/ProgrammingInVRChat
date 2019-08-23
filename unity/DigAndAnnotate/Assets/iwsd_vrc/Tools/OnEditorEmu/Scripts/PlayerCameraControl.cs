@@ -101,7 +101,9 @@ namespace Iwsd
                 PostProcessLayer playerCameraLayer = playerCamera.gameObject.AddComponent<PostProcessLayer>();
                 playerCameraLayer.volumeTrigger = playerCamera.transform;
                 playerCameraLayer.volumeLayer = refCameraLayer.volumeLayer;
+                #if UNITY_EDITOR
                 playerCameraLayer.Init((PostProcessResources)UnityEditor.AssetDatabase.LoadAssetAtPath("Assets/PostProcessing/PostProcessResources.asset", typeof(PostProcessResources)));
+                #endif
             }
         }
 

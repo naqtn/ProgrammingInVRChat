@@ -20,8 +20,7 @@
     - Operations
         - Respawn
         - Quit emulator program
-        - Select player collider
-	- Change player collider layer (Player & PlayerLocal)
+        - Select player collider (Player & PlayerLocal)
 - mouse cursor capture
     - Press ESC key to exit from emulator
     - Click Game window to go back emulator
