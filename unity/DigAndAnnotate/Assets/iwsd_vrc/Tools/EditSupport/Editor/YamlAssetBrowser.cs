@@ -24,26 +24,17 @@ by naqtn
 
 ### TODO
 
-- select LIIF searched item in tree (expanding parent nodes if needed)
+- multi column feature (separate line number ?)
 
-- multi column feature (separate line number)
-- Icon for each row (GameObject, Transform, etc.)
-
-- Add support and test against various resource types
-    - prefab (.prefab)
-    - scene (.unity)
-    - animation (.anim)
+- better tree parent-child construction
     - animation controller (.controller)
         - link parent-child relation
         - AnimatorController - AnimatorStateMachine - AnimatorState - AnimatorStateTransition
-    - (.mat)
-    - (.renderTexture)
-    - (.asset) need drop operation?
-    - others?
+    - scene
+        - re-construct the order amoung children
+        "  m_RootOrder:" of transform
+        - prefab instance to GameObject tree
 
-- re-construct the order amoung children
-
-- better layout
 - check wheather binary format (when reading file? project setting?)
     - asset serialization (Edit > Project Settings > Editor Settings)
 
@@ -53,34 +44,94 @@ by naqtn
 - context menu (inside info text area)
     - search pointing LIIF
     - select resource (specified by guid in YAML) in UnityEditor
-        - memo. AssetDatabase.GUIDToAssetPath
-- receive file (object) drop down to load
-- add a button for re-select (popup) currently loaded object in editor
 
-- Test and check "stripped" case (delete some child object in Prefab ussage)
+- improve search text format
+    - explicit "fileID:", "guid:" prefix
+
+- Test and check "stripped" case handling (delete some child object in Prefab ussage)
+
+- Show current selected object path
+- operation for searched item
+    - in tree (expanding parent nodes if needed)
+    - ping (if another asset file)
 - enter path as text, then expand tree item
 - enter liif, then show appearance points list
+
 - support for file merging, resolving conflicts (two file view)
     - show(browse) diff files (LIIF aware)
-- Help button (including "About this tool" info) 
+- Help button contents
+
+- support derefer name of m_ParentPrefab for Prefab object in scene file
+
+- make a release
+    - write guide document
+    - make package
+    - make release at GitHub
+    - make support page on blog
+
+
 
 ### Implemented Features
 
-- show as tree view
-    - read YAML asset file
-    - hold as objects
-- a label shows what resource is showen (or loaded)
-- support for non component object
-    - (This is implicit in Hierarchy and Project view)
-- show (hold) line number for each object
-- show source lines of object
-- open prefab from using object in the scene
-- search by LIIF
-    - show path (path notation is like "/GameObj1/GameObj2<ComponentName>")
+- Supported file type and extensions:
+    - prefab (.prefab)
+    - scene (.unity)
+        - support for non component object
+            - (This is implicit in Hierarchy and Project view)
+    - animation (.anim)
+    - animation controller (.controller)
+    - material (.mat)
+    - render texture (.renderTexture)
+    - scriptable object (.asset)
+
+- load YAML from selected object in Unity Editor
+    - select an object in Hierarchy view or Project view as usual
+    - open prefab if selected object uses prefab
+
+- a label shows what resource is currently loaded
+    - text is copyable
+    - accept drop and load if it can
+        - This is only way to load for some file type (.asset)
+        - It's also able to accept file from outside of Unity Editor (Explore in Windows)
+        - Hint: scene icon in Hierarchy view to load scene file
+
+- Show YAML objects (documents) in tree view
+    - show icon representing object type
+    - show object's name (if it has) or type name
+    - show MonoBehaviour's script name
+    - show line number where the object comes from
+
+- show YAML texts of selected item in tree view
+- Filter tree item by text matching
+    - tree itams are flatten when filtering 
+
+
+- search by fileID (Local Identifier in file)
+    - show path
+        - path notation is like "/GameObj1/GameObj2<ComponentName>"
+- search by guid
+    - can find system asset
+    - can find project local asset (.cs)
+- search by guid
+
+- a button for re-select (popup) currently loaded object in editor
+- Help button
+- dragable two pane (upper for tree, lower for detail)
+
+
+#### internal features
+
+- Load YAML file and holds each yaml documents as objects
+    - deserialize to an instance. that class is originally implemented
+    - holds line number where the object come from in YAML file
+    - holds YAML file content as text
+- load asset info file
+    - dereference guid-fildID to name string
 
 
 ### memo
-- Icon,  GUIContent 
+
+- Icon,  GUIContent
     - EditorGUIUtility.IconContent
     - EditorGUIUtility.ObjectContent
     - [Unity Editor Built-in Icons](https://github.com/halak/unity-editor-icons)
@@ -89,6 +140,21 @@ by naqtn
     - IHasCustomMenu AddItemsToMenu
 - IMGUI
     - [IMGUI crash course](https://github.com/Bunny83/Unity-Articles/blob/master/IMGUI%20crash%20course.md)
+- FileID
+    - first four bytes of MD4 digest of {115 :32bit int class ID for MonoScript} + Namespace + Name
+        - https://forum.unity.com/threads/yaml-fileid-hash-function-for-dll-scripts.252075/#post-3779584
+        - https://www.robinryf.com/blog/2017/10/30/unity-behaviour-in-dlls.html
+    - UnityScript to C#
+        - https://forum.unity.com/threads/problems-compiling-dlls-from-monodevelop.148617/#post-1024523
+        - https://forum.unity.com/threads/reducing-script-compile-time-or-a-better-workflow-to-reduce-excessive-recompiling.148078/#post-1026639
+    - DLLSwitcher
+        - https://assetstore.unity.com/packages/tools/utilities/dllswitcher-40370
+    - Asset internal info
+        - https://forum.unity.com/threads/yaml-fileid-hash-function-for-dll-scripts.252075/#post-3779584
+        > there is now a ".info" file created in the Library\metadata folder for each external assembly
+- Tools
+    - [ReferenceViewer](https://github.com/anchan828/ReferenceViewer)
+        - https://qiita.com/akihiro_0228/items/4dc0d12b90629a5fdcac
 
  */
 
@@ -164,6 +230,7 @@ namespace Iwsd.UnityYamlObjects {
         static internal readonly Regex child_component_re = new Regex(@"^  - component: {fileID: (\d+)}");
         static internal readonly Regex child_component_old_re = new Regex(@"^  - \d+: {fileID: (\d+)}");
         static internal readonly Regex root_gameobject_re = new Regex(@"^  m_RootGameObject: {fileID: (\d+)}");
+        static internal readonly Regex script_re = new Regex(@"  m_Script: {fileID: (-?[0-9]+), guid: ([0-9a-f]{32}), type: \d}");
     }
 
     //////////////////////////////
@@ -272,6 +339,12 @@ namespace Iwsd.UnityYamlObjects {
                     Debug.LogWarning("GameObjectId == null. type=" + this.GetType() + ", LineNo=" + LineNo);
                     return null; // FIXME or NullGameObject?
                 }
+                else if (!Context.ContainsKey(GameObjectId))
+                {
+                    // CHECK occurs normally for .asset case? (FileID = 0)
+                    Debug.Log("unknown GameObjectId=" + GameObjectId + ", type=" + this.GetType() + ", LineNo=" + LineNo);
+                    return null; // FIXME or NullGameObject?
+                }
                 return (YamlGameObject)Context[GameObjectId];
             }
         }
@@ -360,7 +433,7 @@ namespace Iwsd.UnityYamlObjects {
         public YamlTransform transform { get {
                 if (ComponentIds.Count < 1) { // could be happen for "stripped" case // CHECK
                     Debug.LogWarning("GameObject ComponentIds.Count < 1 : lineNo=" + LineNo + ", type=" + this.GetType());
-                    return null; 
+                    return null;
                 }
                 return (YamlTransform) Context[ComponentIds[0]];
             }}
@@ -386,6 +459,41 @@ namespace Iwsd.UnityYamlObjects {
 
         // like Component.gameObject
         public YamlGameObject gameObject { get { return (YamlGameObject) Context[RootGameObjectId]; }}
+    }
+
+
+    public class YamlBehaviour : YamlComponent
+    {
+        internal YamlBehaviour(WorkingContext context, YamlLocalId liif, int lineNo, UnityTypeInfo unityTypeInfo)
+            : base(context, liif, lineNo, unityTypeInfo) { }
+        //  m_Enabled:
+    }
+
+
+    public class YamlMonoBehaviour : YamlBehaviour
+    {
+        internal YamlMonoBehaviour(WorkingContext context, YamlLocalId liif, int lineNo, UnityTypeInfo unityTypeInfo)
+            : base(context, liif, lineNo, unityTypeInfo) { }
+
+        // m_Script: {fileID, guid}
+        // fileID is fixed value 11500000 for .cs file in the project
+
+        long _fileID;
+        public long Script_fileID {get {return _fileID;}}
+        string _guid;
+        public string Script_guid {get {return _guid;}}
+        
+        internal override void ParseLine(string line)
+        {
+            base.ParseLine(line);
+            Match match;
+            if ((match = YamlLines.script_re.Match(line)).Success)
+            {
+                _fileID = long.Parse(match.Groups[1].Value);
+                _guid = match.Groups[2].Value;
+            }
+        }
+
     }
 
 
@@ -526,14 +634,14 @@ namespace Iwsd.UnityYamlObjects {
         // This is not a general YAML parser.
         public void ParseFile(string filePath)
         {
-            using(var r = new System.IO.StreamReader(filePath))
+            using(var reader = new System.IO.StreamReader(filePath))
             {
                 Clear();
 
                 YamlObject curDoc = null;
                 var lno = 0;
                 string line;
-                while((line = r.ReadLine()) != null)
+                while((line = reader.ReadLine()) != null)
                 {
                     ++lno;
                     context.AddYamlLine(line);
@@ -606,7 +714,7 @@ namespace Iwsd.UnityYamlObjects {
             {
                 return r;
             }
-                
+
             YamlTransform t;
             if (target is YamlGameObject)
             {
@@ -655,7 +763,7 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(4, true, "Transform", typeof(UnityEngine.Transform), typeof(YamlTransform)),
             new UnityTypeInfo(5, false, "TimeManager", null), // hidden typeof(UnityEditor.TimeManager)
             new UnityTypeInfo(6, false, "GlobalGameManager", null),
-            new UnityTypeInfo(8, true, "Behaviour", typeof(UnityEngine.Behaviour)),
+            new UnityTypeInfo(8, true, "Behaviour", typeof(UnityEngine.Behaviour), typeof(YamlBehaviour)),
             new UnityTypeInfo(9, false, "GameManager", null),
             new UnityTypeInfo(11, false, "AudioManager", null), // hidden typeof(UnityEditor.AudioManager)
             new UnityTypeInfo(12, true, "ParticleAnimator", typeof(UnityEngine.ParticleAnimator)),
@@ -722,7 +830,7 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(109, false, "CGProgram", null),
             new UnityTypeInfo(110, false, "BaseAnimationTrack", null),
             new UnityTypeInfo(111, true, "Animation", typeof(UnityEngine.Animation)),
-            new UnityTypeInfo(114, true, "MonoBehaviour", typeof(UnityEngine.MonoBehaviour)),
+            new UnityTypeInfo(114, true, "MonoBehaviour", typeof(UnityEngine.MonoBehaviour), typeof(YamlMonoBehaviour)),
             new UnityTypeInfo(115, false, "MonoScript", typeof(UnityEditor.MonoScript)),
             new UnityTypeInfo(116, false, "MonoManager", null), // hidden typeof(UnityEditor.MonoManager)
             new UnityTypeInfo(117, false, "Texture3D", typeof(UnityEngine.Texture3D)),
@@ -948,9 +1056,101 @@ namespace Iwsd.UnityYamlObjects {
             YamlImplType = yamlImplType;
         }
     }
+
+    internal class AssetInfo
+    {
+        static internal readonly Regex localIdentifier_re = new Regex(@"^    localIdentifier: (-?[0-9]+)");
+        static internal readonly Regex scriptClassName_re = new Regex(@"^    scriptClassName: (.+)");
+
+        private Dictionary<long, string> idToClassName = new Dictionary<long, string>();
+
+        private void readFromInfoFile(string filePath)
+        {
+            using(var reader = new System.IO.StreamReader(filePath))
+            {
+                long localId = -1;
+                string line;
+                while((line = reader.ReadLine()) != null)
+                {
+                    Match match;
+                    if ((match = localIdentifier_re.Match(line)).Success)
+                    {
+                        localId = long.Parse(match.Groups[1].Value);
+                    }
+                    else if ((match = scriptClassName_re.Match(line)).Success)
+                    {
+                        string scriptClassName = match.Groups[1].Value;
+                        try {
+                            idToClassName.Add(localId, scriptClassName);
+                        }
+                        catch (ArgumentException)
+                        {
+                            Debug.Log("localId=" + localId + " n=" + scriptClassName);
+                        }
+
+                    }
+                }
+            }
+        }
+
+        internal void Load(string guid)
+        {
+            var h2 = guid.Substring(0, 2);
+            var fname = Application.dataPath + "/../Library/metadata/" + h2 + "/" + guid + ".info";
+            try
+            {
+                readFromInfoFile(fname);
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.LogWarning("FileNotFound. wong guid?");
+                // TODO show in GUI
+            }
+        }
+
+        internal  string GetName(long fileID)
+        {
+            if (idToClassName.ContainsKey(fileID))
+            {
+                return idToClassName[fileID];
+            }
+            else
+            {
+                // TODO return (out) value and isAvailable? or return null?
+                return "(not found. fileID=" + fileID + ")";
+            }
+        }
+    }
+
+    // fileID:
+    // 8400000 : renderTexture
+
+    public class AssetInfoDatabase
+    {
+        static private Dictionary<string, AssetInfo> guidToInfo = new Dictionary<string, AssetInfo>();
+
+        static public string NameOf(string guid, long fileID)
+        {
+            AssetInfo info;
+            if (guidToInfo.ContainsKey(guid))
+            {
+                info = guidToInfo[guid];
+            }
+            else
+            {
+                info = new AssetInfo();
+                info.Load(guid);
+                guidToInfo.Add(guid, info);
+            }
+
+            return info.GetName(fileID);
+        }
+    }
+
+
 }
 
-    
+
 namespace Iwsd.YamlAssetBrowser
 {
 
@@ -967,7 +1167,7 @@ namespace Iwsd.YamlAssetBrowser
         private Rect handleRect;
         private float handleSize = 10.0f;
         private bool isResizing;
-        
+
         public SplitPane(float initialRatio = 0.5f)
         {
             panelSizeRatio = initialRatio;
@@ -991,7 +1191,7 @@ namespace Iwsd.YamlAssetBrowser
         {
             GUILayout.EndArea();
 
-            // draws handle later 
+            // draws handle later
 
             Rect rect = new Rect(thisRect.x, (int)(thisRect.y + firstRect.height + handleSize),
                                  thisRect.width, (int)(thisRect.height - handleSize - firstRect.height));
@@ -1020,7 +1220,7 @@ namespace Iwsd.YamlAssetBrowser
 
             GUILayout.BeginArea(handleRect, style);
             GUILayout.EndArea();
-            
+
             EditorGUIUtility.AddCursorRect(handleRect, MouseCursor.ResizeVertical);
         }
 
@@ -1034,12 +1234,12 @@ namespace Iwsd.YamlAssetBrowser
                         isResizing = true;
                     }
                     break;
-                    
+
                 case EventType.MouseUp:
                     isResizing = false;
                     break;
             }
-            
+
             if (isResizing)
             {
                 if ((e.mousePosition.x < thisRect.x) || (thisRect.x + thisRect.width < e.mousePosition.x))
@@ -1050,7 +1250,7 @@ namespace Iwsd.YamlAssetBrowser
             if (isResizing)
             {
                 float resizeAxPos = e.mousePosition.y - thisRect.y;
-                if ((0 <= resizeAxPos) && (resizeAxPos <= thisRect.height))
+                if ((handleSize <= resizeAxPos) && (resizeAxPos <= thisRect.height))
                 {
                     panelSizeRatio =  resizeAxPos / thisRect.height;
                 }
@@ -1091,7 +1291,7 @@ namespace Iwsd.YamlAssetBrowser
         }
 
     }
-    
+
     public class Browser : EditorWindow
     {
         [MenuItem("Window/VRC_Iwsd/Yaml Asset Browser")]
@@ -1115,7 +1315,7 @@ namespace Iwsd.YamlAssetBrowser
         [SerializeField] TreeViewState m_TreeViewState;
         [SerializeField] string VisitedAssetFilePath;
         [SerializeField] string VisitedAssetName;
-        [SerializeField] int VisitedObjectInstanceId;
+        [SerializeField] int? VisitedObjectInstanceId;
 
         SplitPane SplitPane;
         YamlObjectsTreeView TreeView;
@@ -1146,7 +1346,19 @@ namespace Iwsd.YamlAssetBrowser
             helpBtContent = EditorGUIUtility.IconContent("_Help");
         }
 
-        void DoToolbar()
+        void OnGUI()
+        {
+            OnGUI_Toolbar();
+
+            SplitPane.Begin();
+            OnGUI_UpperPanel();
+            SplitPane.Split();
+            OnGUI_LowerPanel();
+            SplitPane.End();
+
+        }
+
+        private void OnGUI_Toolbar()
         {
             // from Unity TreeViewExamples.zip
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
@@ -1158,14 +1370,13 @@ namespace Iwsd.YamlAssetBrowser
             if (GUILayout.Button("Load Selected", EditorStyles.toolbarButton))
             {
                 LoadRelatedAsset(active);
-                TreeView.searchString = "";
             }
             EditorGUI.EndDisabledGroup();
 
-            EditorGUI.BeginDisabledGroup(VisitedAssetFilePath == null);
+            EditorGUI.BeginDisabledGroup(VisitedObjectInstanceId == null);
             if (GUILayout.Button("Ping", EditorStyles.toolbarButton))
             {
-                EditorGUIUtility.PingObject(VisitedObjectInstanceId);
+                EditorGUIUtility.PingObject(VisitedObjectInstanceId.Value);
             }
             EditorGUI.EndDisabledGroup();
 
@@ -1179,30 +1390,18 @@ namespace Iwsd.YamlAssetBrowser
             {
                 Rect rp = this.position;
                 Vector2 cs = helpPopupContent.GetWindowSize();
-                Rect rect = new Rect(rp.width/2 - cs.x/2, helpButtonRect.y + 20, 0, helpButtonRect.height);
+                Rect rect = new Rect(rp.width/2 - cs.x/2, helpButtonRect.y + 40, 0, helpButtonRect.height);
                 PopupWindow.Show(rect, helpPopupContent);
             }
             if (Event.current.type == EventType.Repaint)
             {
                 helpButtonRect = GUILayoutUtility.GetLastRect();
             }
-            
+
             GUILayout.EndHorizontal(); // toolbar
         }
 
-        void OnGUI ()
-        {
-            DoToolbar();
-            
-            SplitPane.Begin();
-            DrawUpperPanel();
-            SplitPane.Split();
-            DrawLowerPanel();
-            SplitPane.End();
-
-        }
-       
-        private void DrawUpperPanel()
+        private void OnGUI_UpperPanel()
         {
             // DropAreaGUITest();
             // if (GUILayout.Button("TEST", GUILayout.ExpandWidth(false))) {
@@ -1213,13 +1412,16 @@ namespace Iwsd.YamlAssetBrowser
             // }
 
             EditorGUILayout.Space();
-            EditorGUILayout.SelectableLabel(VisitedAssetName, (GUIStyle)"TextFieldDropDownText");
+
+            // EditorGUILayout.SelectableLabel(VisitedAssetName, (GUIStyle)"TextFieldDropDownText");
+            OnGUI_DropableVisitedLabel();
+    
             // the tree view
-            var rect = EditorGUILayout.GetControlRect(false, 184/2, GUILayout.ExpandHeight(true));
+            var rect = EditorGUILayout.GetControlRect(false, 184, GUILayout.ExpandHeight(true));
             TreeView.OnGUI(rect);
         }
-        
-        private void DrawLowerPanel()
+
+        private void OnGUI_LowerPanel()
         {
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             EditorGUILayout.TextArea(infoAreaString[0], new GUIStyle(GUI.skin.textArea){wordWrap = true});
@@ -1232,9 +1434,9 @@ namespace Iwsd.YamlAssetBrowser
             // if (GUILayout.Button("down", GUILayout.ExpandWidth(false))) {
             // }
             // EditorGUILayout.EndHorizontal();
-            
+
             // Search
-            EditorGUILayout.LabelField("Search by 'Local Identifier In File'");
+            EditorGUILayout.LabelField("Search by fileID, guid, or fileID guid pair"); // 'Local Identifier In File'
             EditorGUI.indentLevel++;
             EditorGUI.BeginChangeCheck();
             searchInput = EditorGUILayout.TextField(searchInput);
@@ -1248,36 +1450,52 @@ namespace Iwsd.YamlAssetBrowser
             }
             EditorGUILayout.TextArea(searchResult, new GUIStyle(GUI.skin.textArea){wordWrap = true});
             EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space();
         }
-    
-        private void DropAreaGUITest()
+
+        private void OnGUI_DropableVisitedLabel()
         {
+            Rect drop_area = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true));
+            EditorGUI.SelectableLabel(drop_area, VisitedAssetName, (GUIStyle)"TextFieldDropDownText");
+            // GUI.Box(drop_area, "DropAreaGUITest");
+
             Event evt = Event.current;
-            Rect drop_area = GUILayoutUtility.GetRect (0.0f, 50.0f, GUILayout.ExpandWidth (true));
-            GUI.Box (drop_area, "DropAreaGUITest");
-     
             switch (evt.type) {
                 case EventType.DragUpdated:
                 case EventType.DragPerform:
-                    if (!drop_area.Contains (evt.mousePosition))
-                        return;
-             
+                    if (!drop_area.Contains(evt.mousePosition))
+                    {
+                        break;
+                    }
+
                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-         
+
                     if (evt.type == EventType.DragPerform) {
                         DragAndDrop.AcceptDrag();
-             
-                        foreach (var obj in DragAndDrop.objectReferences) {
-                            Debug.Log(" dragged_object: " + obj);
+
+                        // foreach (var obj in DragAndDrop.objectReferences) {
+                        //     Debug.Log(" dragged_object: " + obj);
+                        // }
+                        // foreach (var path in DragAndDrop.paths) {
+                        //     Debug.Log(" dragged_path: " + path);
+                        // }
+
+                        var objs = DragAndDrop.objectReferences;
+                        var paths = DragAndDrop.paths;
+                        if (0 < objs.Length)
+                        {
+                            LoadRelatedAsset(objs[0]);
                         }
-                        foreach (var path in DragAndDrop.paths) {
-                            Debug.Log(" dragged_path: " + path);
+                        else if (0 < paths.Length)
+                        {
+                            LoadAssetFile(paths[0]);
                         }
                     }
                     break;
             }
         }
-        
+
         private void LoadRelatedAsset(UnityEngine.Object active)
         {
             var s = "Selected Object:\n";
@@ -1288,6 +1506,12 @@ namespace Iwsd.YamlAssetBrowser
             var assetPath = AssetDatabase.GetAssetPath(loadFrom);
             s += "  AssetPath:'" + assetPath + "'\n";
 
+            LoadAssetFile(assetPath, active, s);
+        }
+
+        private void LoadAssetFile(string assetPath, UnityEngine.Object relatedObj = null, string oplog = "")
+        {
+            var s = oplog;
             if ((assetPath != null) &&
                 (assetPath.EndsWith(".prefab") // REFINE with Any
                  || assetPath.EndsWith(".unity")
@@ -1295,6 +1519,7 @@ namespace Iwsd.YamlAssetBrowser
                  || assetPath.EndsWith(".controller")
                  || assetPath.EndsWith(".mat")
                  || assetPath.EndsWith(".renderTexture")
+                 || assetPath.EndsWith(".asset")
                  ))
             {
                 string filePath = Application.dataPath + "/../" + assetPath;
@@ -1304,27 +1529,66 @@ namespace Iwsd.YamlAssetBrowser
 
                 AssetParser.ParseFile(filePath);
                 s += "  Read " + AssetParser.Count + " objects.";
+
                 TreeView.Reload();
                 TreeView.CollapseAll();
+                TreeView.searchString = "";
+
                 VisitedAssetFilePath = filePath;
                 VisitedAssetName = assetPath; // TODO last name part only is smart (?)
-                VisitedObjectInstanceId = active.GetInstanceID();
+                if (relatedObj == null)
+                {
+                    VisitedObjectInstanceId = null;
+                }
+                else
+                {
+                    VisitedObjectInstanceId = relatedObj.GetInstanceID();
+                }
+
                 infoAreaString[0] = s;
             }
         }
-        
+
+
+        // colon and (\d+) went worng. why?  new Regex(@"fileID: *(\d+).+guid: *([0-9a-f]{32})");
+        static internal readonly Regex guid_fileID_pair_re = new Regex(@"fileID: *(-?[0-9]+).+guid: *([0-9a-f]{32})");
+        static internal readonly Regex guid_re = new Regex(@"([0-9a-f]{32})");
+
         private string Search(string input, out YamlObject found)
         {
             found = null;
-            
+
+            Match match;
+            if ((match = guid_fileID_pair_re.Match(input)).Success)
+            {
+                var fileID = long.Parse(match.Groups[1].Value);
+                var guid = match.Groups[2].Value;
+                return AssetInfoDatabase.NameOf(guid, fileID) + "\n(" + AssetDatabase.GUIDToAssetPath(guid) + ")";
+            }
+
+            if ((match = guid_re.Match(input)).Success)
+            {
+                var guid = match.Groups[1].Value;
+                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                if (assetPath != "")
+                {
+                    return "asset:" + assetPath;
+                }
+                else
+                {
+                    return "unknown asset in this project ?";
+                }
+            }
+
+            // try LIIF
             long liifVal;
             try
             {
                 liifVal = long.Parse(input);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
-                return "Illegal formated value";
+                return "Illegal formated query string";
             }
 
             found = AssetParser.LiifToYamlObjectOrNull(liifVal);
@@ -1334,7 +1598,7 @@ namespace Iwsd.YamlAssetBrowser
             }
             else
             {
-                return  AssetParser.AbsolutePathOf(found);
+                return "local_obj:" + AssetParser.AbsolutePathOf(found);
             }
         }
 
@@ -1389,6 +1653,12 @@ namespace Iwsd.YamlAssetBrowser
                 {
                     var go = (YamlGameObject)val;
                     s += "'" + go.name + "'";
+                }
+                else if (val is YamlMonoBehaviour)
+                {
+                    var mb = (YamlMonoBehaviour)val;
+                    var mbname = AssetInfoDatabase.NameOf(mb.Script_guid, mb.Script_fileID);
+                    s += "MonoBehaviour '" + mbname + "'";
                 }
                 else
                 {
