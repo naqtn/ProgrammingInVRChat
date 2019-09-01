@@ -30,10 +30,6 @@ by naqtn
     - animation controller (.controller)
         - link parent-child relation
         - AnimatorController - AnimatorStateMachine - AnimatorState - AnimatorStateTransition
-    - scene
-        - re-construct the order amoung children
-        "  m_RootOrder:" of transform
-        - prefab instance to GameObject tree
 
 - check wheather binary format (when reading file? project setting?)
     - asset serialization (Edit > Project Settings > Editor Settings)
@@ -61,7 +57,11 @@ by naqtn
     - show(browse) diff files (LIIF aware)
 - Help button contents
 
-- support derefer name of m_ParentPrefab for Prefab object in scene file
+- Better Prefab object support in scene file
+    - derefer name from m_ParentPrefab
+    - prefab instance to GameObject tree
+    - m_Modifications
+        - propertyPath: m_RootOrder
 
 - make a release
     - write guide document
@@ -100,6 +100,14 @@ by naqtn
     - show object's name (if it has) or type name
     - show MonoBehaviour's script name
     - show line number where the object comes from
+    - tree structure
+        - show GameObject tree
+            - (internally tree is made by transform)
+        - also show component as a tree node (different style than hierarchy view)
+        - components first, GameObjects next
+        - components order (GameObjects component list)
+        - GameObjects order (m_RootOrder of transform)
+
 
 - show YAML texts of selected item in tree view
 - Filter tree item by text matching
@@ -223,9 +231,10 @@ namespace Iwsd.UnityYamlObjects {
     internal class YamlLines
     {
         static internal readonly Regex c_directives_end_unity_re = new Regex(@"^--- !u!(\d+) &(\d+)");
-        static internal readonly Regex object_name_re = new Regex(@"^  m_Name: (.+)$");  // GameObject, MonoBehaviour
+        static internal readonly Regex object_name_re = new Regex(@"^  m_Name: (.+)$");  // GameObject
         static internal readonly Regex gameobject_re = new Regex(@"^  m_GameObject: {fileID: (\d+)}"); // Component
         static internal readonly Regex father_re = new Regex(@"^  m_Father: {fileID: (\d+)}"); // Transform, RectTransform
+        static internal readonly Regex root_order_re = new Regex(@"^  m_RootOrder: ([0-9]+)"); // Transform
         static internal readonly Regex component_re = new Regex(@"^  m_Component:$");
         static internal readonly Regex child_component_re = new Regex(@"^  - component: {fileID: (\d+)}");
         static internal readonly Regex child_component_old_re = new Regex(@"^  - \d+: {fileID: (\d+)}");
@@ -361,7 +370,8 @@ namespace Iwsd.UnityYamlObjects {
         // Transform YAML doc has children transforms array, though this impl doen't parse it currently.
         // List<YamlLocalId> ChildrenId;
 
-        // TODO m_RootOrder maybe this saves order amoung brother
+        int _RootOrder;
+        public int RootOrder {get {return _RootOrder;}}
 
         internal override void ParseLine(string line)
         {
@@ -370,6 +380,10 @@ namespace Iwsd.UnityYamlObjects {
             if ((match = YamlLines.father_re.Match(line)).Success)
             {
                 FatherId = new YamlLocalId(match.Groups[1].Value);  // m_Father: {} => FatherId
+            }
+            else if ((match = YamlLines.root_order_re.Match(line)).Success)
+            {
+                _RootOrder = int.Parse(match.Groups[1].Value);
             }
         }
 
@@ -392,7 +406,7 @@ namespace Iwsd.UnityYamlObjects {
         internal YamlGameObject(WorkingContext context, YamlLocalId liif, int lineNo, UnityTypeInfo unityTypeInfo)
             : base(context, liif, lineNo, unityTypeInfo) { }
 
-        List<YamlLocalId> ComponentIds = new List<YamlLocalId>();
+        public List<YamlLocalId> ComponentIds = new List<YamlLocalId>();
 
         bool parsingComponents = false;
         internal override void ParseLine(string line)
@@ -1348,8 +1362,12 @@ namespace Iwsd.YamlAssetBrowser
 
         void OnGUI()
         {
-            OnGUI_Toolbar();
+            if (TreeView == null) // avoid continuous NullReferenceException (sometimes I break it during development)
+            {
+                return;
+            }
 
+            OnGUI_Toolbar();
             SplitPane.Begin();
             OnGUI_UpperPanel();
             SplitPane.Split();
@@ -1731,12 +1749,89 @@ namespace Iwsd.YamlAssetBrowser
                 viewRoot.AddChild(new YamlObjectsTreeViewItem{ id = 1, displayName = "Empty (Select a resource in Project or Hierarchy, and Press 'Load')"});
             }
 
-            // 4. setup
+            // 4. reorder amoung brothers
+            ReorderAmoungBrothers(viewRoot);
+            
+            // 5. setup
             SetupDepthsFromParentsAndChildren(viewRoot);
 
             return viewRoot;
         }
 
+        private void ReorderAmoungBrothers(TreeViewItem node)
+        {
+            if (node.children != null)
+            {
+                node.children.Sort(CompareYamlObjectsTreeViewItem);
+                foreach (var child in node.children)
+                {
+                    ReorderAmoungBrothers(child);
+                }
+            }
+        }
+        
+        private int CompareYamlObjectsTreeViewItem(TreeViewItem x, TreeViewItem y)
+        {
+            // Order GameObject children rule
+            // 1. components first, GameObjects next.
+            // 2. components order is same as in m_Component list in the GameObject.
+            // 3. GameObjects order is determined by its Transform.RootOrder.
+
+            var xi = ((YamlObjectsTreeViewItem)x).Liif;
+            var yi = ((YamlObjectsTreeViewItem)y).Liif;
+
+            // YamlObjects item first, pseudo item later
+            if ((xi == null) && (yi != null))
+            {
+                return +1;
+            }
+            else if ((xi != null) && (yi == null))
+            {
+                return -1;
+            }
+            else if ((xi == null) && (yi == null))
+            {
+                return 0;
+            }
+            
+            var xo = objs[xi];
+            var yo = objs[yi];
+
+            // Component first, GameObject later
+            if ((xo is YamlGameObject) && (yo is YamlComponent))
+            {
+                return +1;
+            }
+            else if ((xo is YamlComponent) && (yo is YamlGameObject))
+            {
+                return -1;
+            }
+            else if ((xo is YamlComponent) && (yo is YamlComponent))
+            {
+                var go = ((YamlComponent)xo).gameObject;
+                var xn = go.ComponentIds.IndexOf(xo.Liif);
+                var yn = go.ComponentIds.IndexOf(yo.Liif);
+                if ((xn == -1) || (yn == -1))
+                {
+                    Debug.LogError("unexpected. xn=" + xn + ", yn=" + yn);
+                    return 0;
+                }
+                return xn - yn;
+            }
+            else if ((xo is YamlGameObject) && (yo is YamlGameObject))
+            {
+                var xg = (YamlGameObject)xo;
+                var yg = (YamlGameObject)yo;
+                return xg.transform.RootOrder - yg.transform.RootOrder;
+            }
+            else
+            {
+                // e.g. LightmapSettings, OcclusionCullingSettings in .scene file
+                // Debug.Log("other objects are equal. xi=" + xi + ", yi=" + yi);
+                return 0;
+            }
+        }
+        
         protected override void SelectionChanged(IList<int> selectedIds)
         {
             // starting impl for single selection support
