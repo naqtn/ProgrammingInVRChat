@@ -17,14 +17,12 @@ VRC_Iwsd / Unity YAML Asset Browser
 
 by naqtn
 
- */
-
-
-/*
 
 ### TODO
 
-- multi column feature (separate line number ?)
+- select tree item from Hierarchy view (while opening same scene file)
+    - manual select button
+    - auto follow toggle
 
 - better tree parent-child construction
     - animation controller (.controller)
@@ -35,7 +33,8 @@ by naqtn
     - asset serialization (Edit > Project Settings > Editor Settings)
 
 - YAML document block up/down button, (at the same time, open and select item in tree)
-- search by line number
+- reposition by line number
+    - input search box like "line:184"
 
 - context menu (inside info text area)
     - search pointing LIIF
@@ -44,7 +43,16 @@ by naqtn
 - improve search text format
     - explicit "fileID:", "guid:" prefix
 
+- navigation history
+    - save visited tree node path
+    - add back and forward button
+    - show history popup, select to jump
+
 - Test and check "stripped" case handling (delete some child object in Prefab ussage)
+    - https://unity3d.com/unity/qa/patch-releases/5.0.0p2
+        - > (663873), (672462) - Editor: Stripped prefab instance objects are now marked as stripped in the scene file, so the loading code does not try to upgrade objects which would issue wrong warnings and in worst case crashes.
+    - https://forum.unity.com/threads/scene-files-invalid-yaml.355653/
+    - https://forum.unity.com/threads/smart-merge-not-working.315903/
 
 - Show current selected object path
 - operation for searched item
@@ -68,6 +76,9 @@ by naqtn
     - make package
     - make release at GitHub
     - make support page on blog
+
+- multi column feature
+    - (For what feature? necessary?)
 
 
 
@@ -109,10 +120,11 @@ by naqtn
         - GameObjects order (m_RootOrder of transform)
 
 
-- show YAML texts of selected item in tree view
+- show YAML text of selected item in tree view
+    - text are scrollable over whole file
+
 - Filter tree item by text matching
     - tree itams are flatten when filtering 
-
 
 - search by fileID (Local Identifier in file)
     - show path
@@ -136,8 +148,15 @@ by naqtn
 - load asset info file
     - dereference guid-fildID to name string
 
+### Known issue
 
-### memo
+- Prefab instances (in scene file) are not appears in GameObject hierarchy tree.
+- Stripped prefab in scene file is not handled well
+    - (Stripped prefab seems relate to delete something from prefab)
+
+
+
+### MEMO
 
 - Icon,  GUIContent
     - EditorGUIUtility.IconContent
@@ -163,6 +182,12 @@ by naqtn
 - Tools
     - [ReferenceViewer](https://github.com/anchan828/ReferenceViewer)
         - https://qiita.com/akihiro_0228/items/4dc0d12b90629a5fdcac
+- TreeView multi column
+    - https://github.com/anchan828/texture-tree-view-sample
+    - http://light11.hatenadiary.com/entry/2019/02/07/010146
+- "String too long for TextMeshGenerator. Cutting off characters." on TextArea
+    - https://forum.unity.com/threads/string-too-long-for-textmeshgenerator-cutting-off-characters.351852/
+    - 65535/4 = 16383.75 is limit
 
  */
 
@@ -222,10 +247,12 @@ namespace Iwsd.UnityYamlObjects {
         // subset of System.Collections.Generic.IReadOnlyDictionary<YamlLocalId, YamlObject>
         // (IReadOnlyDictionary doesn't exist in Unity 2017.4.28f enviroment)
         YamlObject this[YamlLocalId key] { get; }
-        bool ContainsKey (YamlLocalId key);
-        bool TryGetValue (YamlLocalId key, out YamlObject value);
+        bool ContainsKey(YamlLocalId key);
+        bool TryGetValue(YamlLocalId key, out YamlObject value);
 
         string GetYamlLine(int lineNo);
+
+        void DebugWarn(string message);
     }
 
     internal class YamlLines
@@ -345,13 +372,13 @@ namespace Iwsd.UnityYamlObjects {
                 // http://mokuapps.com/develop/?p=668
                 if (GameObjectId == null)
                 {
-                    Debug.LogWarning("GameObjectId == null. type=" + this.GetType() + ", LineNo=" + LineNo);
+                    Context.DebugWarn("GameObjectId == null. type=" + this.GetType() + ", LineNo=" + LineNo);
                     return null; // FIXME or NullGameObject?
                 }
                 else if (!Context.ContainsKey(GameObjectId))
                 {
                     // CHECK occurs normally for .asset case? (FileID = 0)
-                    Debug.Log("unknown GameObjectId=" + GameObjectId + ", type=" + this.GetType() + ", LineNo=" + LineNo);
+                    Context.DebugWarn("unknown GameObjectId=" + GameObjectId + ", type=" + this.GetType() + ", LineNo=" + LineNo);
                     return null; // FIXME or NullGameObject?
                 }
                 return (YamlGameObject)Context[GameObjectId];
@@ -446,7 +473,7 @@ namespace Iwsd.UnityYamlObjects {
 
         public YamlTransform transform { get {
                 if (ComponentIds.Count < 1) { // could be happen for "stripped" case // CHECK
-                    Debug.LogWarning("GameObject ComponentIds.Count < 1 : lineNo=" + LineNo + ", type=" + this.GetType());
+                    Context.DebugWarn("GameObject ComponentIds.Count < 1 : lineNo=" + LineNo + ", type=" + this.GetType());
                     return null;
                 }
                 return (YamlTransform) Context[ComponentIds[0]];
@@ -528,6 +555,11 @@ namespace Iwsd.UnityYamlObjects {
 
     class WorkingContextImpl : WorkingContext
     {
+        public void DebugWarn(string message)
+        {
+            // Debug.LogWarning(message);
+        }
+
         //////////////////////////////
         // Object set
         private Dictionary<YamlLocalId, YamlObject> Objs = new Dictionary<YamlLocalId, YamlObject>();
@@ -569,6 +601,13 @@ namespace Iwsd.UnityYamlObjects {
             SourceText.Add(line);
         }
 
+        internal List<string> GetAllYamlLines()
+        {
+            // TODO return copy?
+            // *IReadOnlyList<string> is not available. new ReadOnlyCollection<string>(SourceText);
+            return SourceText;
+        }
+
         //////////////////////////////
         internal void Clear()
         {
@@ -598,6 +637,11 @@ namespace Iwsd.UnityYamlObjects {
         {
             context.Clear();
             _RootObject = null;
+        }
+
+        public List<string> GetAllYamlLines()
+        {
+            return context.GetAllYamlLines();
         }
 
         private YamlObject CreateYamlObject(long liif, int yamlClassId, int lineNo)
@@ -1182,13 +1226,14 @@ namespace Iwsd.YamlAssetBrowser
         private float handleSize = 10.0f;
         private bool isResizing;
 
-        public SplitPane(float initialRatio = 0.5f)
+        public SplitPane()
         {
-            panelSizeRatio = initialRatio;
         }
 
-        public void Begin()
+        public void Begin(float splitRatio)
         {
+            panelSizeRatio = splitRatio;
+
             Rect tmp = EditorGUILayout.BeginVertical(GUILayout.ExpandHeight(true));
             if (0f < tmp.width)
             {
@@ -1212,7 +1257,7 @@ namespace Iwsd.YamlAssetBrowser
             GUILayout.BeginArea(rect);
         }
 
-        public void End()
+        public float End()
         {
             GUILayout.EndArea();
 
@@ -1220,6 +1265,8 @@ namespace Iwsd.YamlAssetBrowser
             ProcessEvents(Event.current);
 
             EditorGUILayout.EndVertical();
+
+            return panelSizeRatio;
         }
 
         private void DrawHandle()
@@ -1276,6 +1323,147 @@ namespace Iwsd.YamlAssetBrowser
         }
     }
 
+    internal class LargeContentTextArea
+    {
+        private string _lineNumberFormat = "{0,5:#####} ";
+        string lineNumberFormat {
+            get {return _lineNumberFormat;}
+            set { _lineNumberFormat = value; dirty = true;}
+        }
+
+        private string controlName;
+        private List<string> linesBuffer;
+        private Vector2 scrollPos = new Vector2(0, 0);
+
+        private bool dirty;
+        private string lastRenderedString;
+
+        private int preLines;
+        private int actualLines;
+        private int postLines;
+        private float lineHeight = EditorGUIUtility.singleLineHeight;
+        
+        internal LargeContentTextArea()
+        {
+            controlName = "LargeContentTextArea" + this.GetHashCode();
+            linesBuffer = new List<string>();
+            dirty = true;
+        }
+
+        public void Clear()
+        {
+            linesBuffer.Clear();
+            SetScrollPositionAt(0);
+            dirty = true;
+        }
+
+        public void SetScrollPositionAt(int lineNo)
+        {
+            // Workaround for displacement +2 line. I don't understand why constant +2 occurs.
+            float y = (lineNo - 3) * lineHeight - (lineHeight * 0.4f);
+            y = (y < 0)? 0: y;
+            
+            scrollPos = new Vector2(0, y);
+            dirty = true;
+        }
+        
+        public void SetMultilineString(string lines)
+        {
+            AddLines(lines.Split('\n'));
+        }
+    
+        public void AddLine(string l)
+        {
+            linesBuffer.Add(l);
+            dirty = true;
+        }
+
+        // @param lineNumberFormat format string of String.Format() for headdind line number of each line.
+        // If null, not append line number.
+        public void AddLines(IEnumerable<string> lines)
+        {
+            foreach (var l in lines)
+            {
+                linesBuffer.Add(l);
+            }
+            dirty = true;
+        }
+        
+        // keyboardControl PageUp, PageDown
+        // MEMO
+        // - GUIUtility.GetControlID has FocusType parameter
+        // - EditorGUI.SelectableLabel seems hold text while it has focus
+        // - GUI.Label is almost DrawString (?)
+
+        internal void OnGUI()
+        {
+    
+            var scrollPos_tmp = EditorGUILayout.BeginScrollView(scrollPos);
+            if (scrollPos_tmp != scrollPos)
+            {
+                scrollPos = scrollPos_tmp;
+                dirty = true;
+
+                // Workaround. If TextArea has focus, it doesn't change content appearance.
+                // so remove focus if content refreshing is needed.
+                if (GUI.GetNameOfFocusedControl() == controlName)
+                {
+                    GUI.FocusControl(null);
+                }
+            }
+
+            if (dirty)
+            {
+                int windoLines = 50;
+                int aboveRoom = 10;
+                preLines = (int)(scrollPos.y / lineHeight) - aboveRoom;
+                preLines = (preLines < 0)? 0: preLines;
+                postLines = linesBuffer.Count - windoLines - preLines;
+                postLines = (postLines < 0)? 0: postLines; // clamp
+
+                var sb = new System.Text.StringBuilder();
+                actualLines = 0;
+                for (int i = preLines; (i < preLines + windoLines) && (i < linesBuffer.Count); i++)
+                {
+                    actualLines++;
+                    if (lineNumberFormat != null)
+                    {
+                        sb.Append(string.Format(lineNumberFormat, i+1));
+                    }
+                    sb.AppendLine(linesBuffer[i]);
+                }
+                lastRenderedString = sb.ToString();
+                dirty = false;
+            }
+
+            // TODO context menu to search pointing line reference
+            // (It might necessary to replace TextArea with Label (or something) because there's no way to replace or add context menu of TextArea.
+            // Or it's possible to override menu event behaviour completely? Anyway, I shoud investigate more)
+            Event evt = Event.current;
+            if (evt.type == EventType.ContextClick)
+            {
+                Debug.Log("ContextClick");
+            }
+            // evt.GetTypeForControl(id)
+            
+            GUILayout.Space(preLines * lineHeight);
+
+            GUI.SetNextControlName(controlName);
+            Rect textArea = EditorGUILayout.GetControlRect(false, lineHeight * actualLines);
+            GUIContent content = new GUIContent(lastRenderedString);
+            var style = new GUIStyle(); // GUI.skin.textArea (GUIStyle)"OL TextField" //  (GUIStyle)"TextFieldDropDownText"
+            // style.wordWrap = true;
+            // style.alignment = TextAnchor.LowerRight; // UpperLeft;
+            // GUI.DrawTexture(textArea, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill); // to check rect
+            // GUI.Label(textArea, content, style);
+            EditorGUI.TextArea(textArea, content.text); // , style);
+
+            GUILayout.Space(postLines * lineHeight);
+
+            EditorGUILayout.EndScrollView();
+        }
+    }
+
     internal class HelpPupupContent : PopupWindowContent
     {
         public override void OnGUI(Rect rect)
@@ -1319,9 +1507,8 @@ namespace Iwsd.YamlAssetBrowser
             Repaint();
         }
 
-        Vector2 scrollPosition = new Vector2(0, 0);
+        Vector2 textAreaScrollPosition = new Vector2(0, 0);
         string searchInput = "";
-        string searchResult = "(search result)";
         string[] infoAreaString = {"(info text)"};
 
         YamlAssetParser AssetParser;
@@ -1332,32 +1519,45 @@ namespace Iwsd.YamlAssetBrowser
         [SerializeField] int? VisitedObjectInstanceId;
 
         SplitPane SplitPane;
+        [SerializeField] float panelSizeRatio = 0.6f;
+
         YamlObjectsTreeView TreeView;
         SearchField SearchField;
 
         Rect helpButtonRect;
         GUIContent helpBtContent;
         HelpPupupContent helpPopupContent = new HelpPupupContent();
+        LargeContentTextArea largeContentTextArea = new LargeContentTextArea();
 
-        void OnEnable ()
+        void OnEnable()
         {
-            SplitPane = new SplitPane(0.7f);
-
+            // create SerializeField instances if not exist 
             if (m_TreeViewState == null)
             {
                 m_TreeViewState = new TreeViewState();
             }
+
+            SplitPane = new SplitPane();
+
             AssetParser = new YamlAssetParser();
             if ((VisitedAssetFilePath != null) && (VisitedAssetFilePath != ""))
             {
                 AssetParser.ParseFile(VisitedAssetFilePath);
             }
-            TreeView = new YamlObjectsTreeView(m_TreeViewState, AssetParser, infoAreaString);
+            TreeView = new YamlObjectsTreeView(m_TreeViewState, AssetParser, OnObjectSelectedInTreeView);
+
+            largeContentTextArea = new LargeContentTextArea();
+            largeContentTextArea.AddLines(AssetParser.GetAllYamlLines());
 
             SearchField = new SearchField();
             SearchField.downOrUpArrowKeyPressed += TreeView.SetFocusAndEnsureSelectedItem;
 
             helpBtContent = EditorGUIUtility.IconContent("_Help");
+        }
+
+        private void OnObjectSelectedInTreeView(YamlObject obj)
+        {
+            largeContentTextArea.SetScrollPositionAt(obj.LineNo);
         }
 
         void OnGUI()
@@ -1368,11 +1568,11 @@ namespace Iwsd.YamlAssetBrowser
             }
 
             OnGUI_Toolbar();
-            SplitPane.Begin();
+            SplitPane.Begin(panelSizeRatio);
             OnGUI_UpperPanel();
             SplitPane.Split();
             OnGUI_LowerPanel();
-            SplitPane.End();
+            panelSizeRatio = SplitPane.End();
 
         }
 
@@ -1441,10 +1641,8 @@ namespace Iwsd.YamlAssetBrowser
 
         private void OnGUI_LowerPanel()
         {
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-            EditorGUILayout.TextArea(infoAreaString[0], new GUIStyle(GUI.skin.textArea){wordWrap = true});
-            EditorGUILayout.EndScrollView();
-
+            largeContentTextArea.OnGUI();
+        
             // TODO YAML document up/down navigation
             // EditorGUILayout.BeginHorizontal();
             // if (GUILayout.Button("up", GUILayout.ExpandWidth(false))) {
@@ -1452,6 +1650,8 @@ namespace Iwsd.YamlAssetBrowser
             // if (GUILayout.Button("down", GUILayout.ExpandWidth(false))) {
             // }
             // EditorGUILayout.EndHorizontal();
+
+            GUILayout.FlexibleSpace();
 
             // Search
             EditorGUILayout.LabelField("Search by fileID, guid, or fileID guid pair"); // 'Local Identifier In File'
@@ -1461,13 +1661,19 @@ namespace Iwsd.YamlAssetBrowser
             if (EditorGUI.EndChangeCheck())
             {
                 YamlObject searchFoundObj;
-                searchResult = Search(searchInput, out searchFoundObj);
+                infoAreaString[0] = Search(searchInput, out searchFoundObj);
                 if (searchFoundObj) {
                     TreeView.SelectAndRevealAndFrame(searchFoundObj);
                 }
             }
-            EditorGUILayout.TextArea(searchResult, new GUIStyle(GUI.skin.textArea){wordWrap = true});
             EditorGUI.indentLevel--;
+
+            textAreaScrollPosition
+                = EditorGUILayout.BeginScrollView(textAreaScrollPosition, // false, true, 
+                                                  GUILayout.MinHeight(3 * EditorGUIUtility.singleLineHeight));
+            EditorGUILayout.TextArea(infoAreaString[0], new GUIStyle(GUI.skin.textArea){wordWrap = true},
+                                     GUILayout.ExpandHeight(true));
+            EditorGUILayout.EndScrollView();
 
             EditorGUILayout.Space();
         }
@@ -1564,6 +1770,9 @@ namespace Iwsd.YamlAssetBrowser
                 }
 
                 infoAreaString[0] = s;
+
+                largeContentTextArea.Clear();
+                largeContentTextArea.AddLines(AssetParser.GetAllYamlLines());
             }
         }
 
@@ -1638,18 +1847,23 @@ namespace Iwsd.YamlAssetBrowser
         }
     }
 
+    delegate void ObjectSelectedCallback(YamlObject obj);
+
     class YamlObjectsTreeView : TreeView
     {
-
+        void DebugWarn(string message)
+        {
+            // Debug.LogWarning(message);
+        }
+    
         YamlAssetParser objs;
-        string[] InfoString;
-
-        public YamlObjectsTreeView(TreeViewState treeViewState, YamlAssetParser objs, string[] infoString)
+        ObjectSelectedCallback objectSelected;
+    
+        public YamlObjectsTreeView(TreeViewState treeViewState, YamlAssetParser objs, ObjectSelectedCallback callback)
             : base(treeViewState)
         {
             this.objs = objs;
-            InfoString = infoString;
-
+            objectSelected = callback;
             Reload();
         }
 
@@ -1809,11 +2023,17 @@ namespace Iwsd.YamlAssetBrowser
             else if ((xo is YamlComponent) && (yo is YamlComponent))
             {
                 var go = ((YamlComponent)xo).gameObject;
+                if (go == null)
+                {
+                    DebugWarn("go == null. xo.lineNo=" + xo.LineNo + "yo.lineNo=" + yo.LineNo);
+                    return 0;
+                }
                 var xn = go.ComponentIds.IndexOf(xo.Liif);
                 var yn = go.ComponentIds.IndexOf(yo.Liif);
                 if ((xn == -1) || (yn == -1))
                 {
-                    Debug.LogError("unexpected. xn=" + xn + ", yn=" + yn);
+                    // MEMO it seems relate stripped prefab
+                    DebugWarn("unexpected. xn=" + xn + ", yn=" + yn + ", xo.Liif=" + xo.Liif + ", yo.Liif=" + yo.Liif);
                     return 0;
                 }
                 return xn - yn;
@@ -1822,12 +2042,19 @@ namespace Iwsd.YamlAssetBrowser
             {
                 var xg = (YamlGameObject)xo;
                 var yg = (YamlGameObject)yo;
-                return xg.transform.RootOrder - yg.transform.RootOrder;
+                var xt = xg.transform;
+                var yt = yg.transform;
+                if ((xt == null) || (yt == null))
+                {
+                    DebugWarn("null transform. xt=" + xt + ", yt=" + yt + "xo.lineNo=" + xo.LineNo + "yo.lineNo=" + yo.LineNo);
+                    return 0;
+                }
+                return xt.RootOrder - yt.RootOrder;
             }
             else
             {
                 // e.g. LightmapSettings, OcclusionCullingSettings in .scene file
-                // Debug.Log("other objects are equal. xi=" + xi + ", yi=" + yi);
+                DebugWarn("other objects are equal. xi=" + xi + ", yi=" + yi);
                 return 0;
             }
         }
@@ -1846,10 +2073,9 @@ namespace Iwsd.YamlAssetBrowser
             if (item.Liif != null)  // could be null for non-YamlObject-related item ("Empty", "Others")
             {
                 var yamlObj = objs[item.Liif];
-                InfoString[0] = yamlObj.GetYamlText();
+                objectSelected(yamlObj);
             }
         }
-
 
         public void SelectAndRevealAndFrame(YamlObject obj)
         {
