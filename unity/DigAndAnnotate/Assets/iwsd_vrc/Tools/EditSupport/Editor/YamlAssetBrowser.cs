@@ -20,10 +20,6 @@ by naqtn
 
 ### TODO
 
-- select tree item from Hierarchy view (while opening same scene file)
-    - manual select button
-    - auto follow toggle
-
 - better tree parent-child construction
     - animation controller (.controller)
         - link parent-child relation
@@ -32,17 +28,20 @@ by naqtn
 - check wheather binary format (when reading file? project setting?)
     - asset serialization (Edit > Project Settings > Editor Settings)
 
-- YAML document block up/down button, (at the same time, open and select item in tree)
-- reposition by line number
-    - input search box like "line:184"
-
-- context menu (inside info text area)
-    - search pointing LIIF
-    - select resource (specified by guid in YAML) in UnityEditor
-
-- improve search text format
-    - explicit "fileID:", "guid:" prefix
-
+- improve navigation (search and select) feature
+    - explicit "fileID:", "guid:" prefix format
+    - search context menu (inside YAML text area)
+        - pointing LIIF
+        - pointing fileID and guid
+    - select result resource (specified by guid in YAML) in UnityEditor (ping)
+    - line jump (like "line:184")
+    - YAML document block up/down button, (at the same time, open and select item in tree. if select option is on)
+    - enter liif, then show appearance points list
+    - enter path as text, then expand tree item
+    - Show current selected object path
+- select tree item from Hierarchy view (while opening same scene file)
+    - manual select button
+    - auto follow toggle
 - navigation history
     - save visited tree node path
     - add back and forward button
@@ -53,13 +52,6 @@ by naqtn
         - > (663873), (672462) - Editor: Stripped prefab instance objects are now marked as stripped in the scene file, so the loading code does not try to upgrade objects which would issue wrong warnings and in worst case crashes.
     - https://forum.unity.com/threads/scene-files-invalid-yaml.355653/
     - https://forum.unity.com/threads/smart-merge-not-working.315903/
-
-- Show current selected object path
-- operation for searched item
-    - in tree (expanding parent nodes if needed)
-    - ping (if another asset file)
-- enter path as text, then expand tree item
-- enter liif, then show appearance points list
 
 - support for file merging, resolving conflicts (two file view)
     - show(browse) diff files (LIIF aware)
@@ -84,6 +76,9 @@ by naqtn
 
 ### Implemented Features
 
+- Open window from unity menu
+    - Supports multiple window. Each can load different asset.
+
 - Supported file type and extensions:
     - prefab (.prefab)
     - scene (.unity)
@@ -99,7 +94,7 @@ by naqtn
     - select an object in Hierarchy view or Project view as usual
     - open prefab if selected object uses prefab
 
-- a label shows what resource is currently loaded
+- asset name field: a label that shows what resource is currently loaded
     - text is copyable
     - accept drop and load if it can
         - This is only way to load for some file type (.asset)
@@ -129,10 +124,10 @@ by naqtn
 - search by fileID (Local Identifier in file)
     - show path
         - path notation is like "/GameObj1/GameObj2<ComponentName>"
+    - select found item in tree (and YAML text) if select option is on
 - search by guid
     - can find system asset
     - can find project local asset (.cs)
-- search by guid
 
 - a button for re-select (popup) currently loaded object in editor
 - Help button
@@ -1211,7 +1206,6 @@ namespace Iwsd.UnityYamlObjects {
 
 namespace Iwsd.YamlAssetBrowser
 {
-
     // user resizable splited area
     //
     // - https://github.com/miguel12345/EditorGUISplitView/blob/master/Assets/EditorGUISplitView/Scripts/Editor/EditorGUISplitView.cs
@@ -1468,11 +1462,15 @@ namespace Iwsd.YamlAssetBrowser
     {
         public override void OnGUI(Rect rect)
         {
-
             GUILayout.BeginVertical("", (GUIStyle)"HelpBox"); // "Tooltip", "VCS_StickyNote", "U2D.createRect", "grey_border"
             GUILayout.Space(10);
-            EditorGUILayout.LabelField("VRC_Iwsd / Unity YAML Asset Browser", (GUIStyle)"ProgressBarBar", GUILayout.ExpandWidth(true)); // new GUIStyle(){fontStyle = FontStyle.Bold});
+            EditorGUILayout.LabelField("VRC_Iwsd / YAML Asset Browser", (GUIStyle)"ProgressBarBar", GUILayout.ExpandWidth(true)); // new GUIStyle(){fontStyle = FontStyle.Bold});
             EditorGUILayout.LabelField("v 0.1");
+            GUILayout.Space(10);
+            if (GUILayout.Button("Open online help", GUILayout.ExpandWidth(false)))
+            {
+                Help.BrowseURL("http://vrcprog.hatenablog.jp/draft/6LNeESUfy1dUqQd-gJY4SnpZ45s");
+            }
             GUILayout.Space(10);
             GUILayout.EndVertical();
 
@@ -1489,7 +1487,7 @@ namespace Iwsd.YamlAssetBrowser
 
         public override Vector2 GetWindowSize()
         {
-            return new Vector2(300, 100);
+            return new Vector2(300, 130);
         }
 
     }
@@ -1499,7 +1497,9 @@ namespace Iwsd.YamlAssetBrowser
         [MenuItem("Window/VRC_Iwsd/Yaml Asset Browser")]
         static void OpenYamlAssetBrowser()
         {
-            EditorWindow.GetWindow<Browser>("Asset Browser");
+            // EditorWindow.GetWindow<Browser>("Asset Browser");
+            var window = CreateInstance<Browser>();
+            window.Show();
         }
 
         void OnInspectorUpdate()
@@ -1510,6 +1510,7 @@ namespace Iwsd.YamlAssetBrowser
         Vector2 textAreaScrollPosition = new Vector2(0, 0);
         string searchInput = "";
         string[] infoAreaString = {"(info text)"};
+        [SerializeField] bool selectAfterSearch = false;
 
         YamlAssetParser AssetParser;
 
@@ -1523,7 +1524,7 @@ namespace Iwsd.YamlAssetBrowser
 
         YamlObjectsTreeView TreeView;
         SearchField SearchField;
-
+    
         Rect helpButtonRect;
         GUIContent helpBtContent;
         HelpPupupContent helpPopupContent = new HelpPupupContent();
@@ -1537,6 +1538,8 @@ namespace Iwsd.YamlAssetBrowser
                 m_TreeViewState = new TreeViewState();
             }
 
+            titleContent = new GUIContent("Asset Browser", "VRC_Iwsd / YAML Asset Browser");
+                
             SplitPane = new SplitPane();
 
             AssetParser = new YamlAssetParser();
@@ -1553,6 +1556,7 @@ namespace Iwsd.YamlAssetBrowser
             SearchField.downOrUpArrowKeyPressed += TreeView.SetFocusAndEnsureSelectedItem;
 
             helpBtContent = EditorGUIUtility.IconContent("_Help");
+
         }
 
         private void OnObjectSelectedInTreeView(YamlObject obj)
@@ -1585,7 +1589,7 @@ namespace Iwsd.YamlAssetBrowser
 
             var active = Selection.activeObject; // Selection.activeGameObject;
             EditorGUI.BeginDisabledGroup(active == null);
-            if (GUILayout.Button("Load Selected", EditorStyles.toolbarButton))
+            if (GUILayout.Button("Load", EditorStyles.toolbarButton))
             {
                 LoadRelatedAsset(active);
             }
@@ -1654,7 +1658,12 @@ namespace Iwsd.YamlAssetBrowser
             GUILayout.FlexibleSpace();
 
             // Search
+            GUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Search by fileID, guid, or fileID guid pair"); // 'Local Identifier In File'
+            GUILayout.FlexibleSpace();
+            selectAfterSearch = EditorGUILayout.ToggleLeft("and select it", selectAfterSearch, GUILayout.ExpandWidth(false));
+            GUILayout.EndHorizontal();
+
             EditorGUI.indentLevel++;
             EditorGUI.BeginChangeCheck();
             searchInput = EditorGUILayout.TextField(searchInput);
@@ -1662,8 +1671,9 @@ namespace Iwsd.YamlAssetBrowser
             {
                 YamlObject searchFoundObj;
                 infoAreaString[0] = Search(searchInput, out searchFoundObj);
-                if (searchFoundObj) {
+                if ((searchFoundObj != null) && selectAfterSearch) {
                     TreeView.SelectAndRevealAndFrame(searchFoundObj);
+                    largeContentTextArea.SetScrollPositionAt(searchFoundObj.LineNo);
                 }
             }
             EditorGUI.indentLevel--;
@@ -1746,9 +1756,17 @@ namespace Iwsd.YamlAssetBrowser
                  || assetPath.EndsWith(".asset")
                  ))
             {
-                string filePath = Application.dataPath + "/../" + assetPath;
+                string filePath;
+                if (System.IO.Path.IsPathRooted(assetPath))
+                {
+                    filePath = assetPath;
+                }
+                else
+                {
+                    filePath = Application.dataPath + "/../" + assetPath;
+                }
                 s += "\n";
-                s += "  FilePath to read:\n";
+                s += "FilePath to read:\n";
                 s += "  '" + filePath + "'\n";
 
                 AssetParser.ParseFile(filePath);
