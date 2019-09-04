@@ -1443,7 +1443,7 @@ namespace Iwsd.YamlAssetBrowser
             GUI.SetNextControlName(controlName);
             Rect textArea = EditorGUILayout.GetControlRect(false, lineHeight * actualLines);
             GUIContent content = new GUIContent(lastRenderedString);
-            var style = new GUIStyle(); // GUI.skin.textArea (GUIStyle)"OL TextField" //  (GUIStyle)"TextFieldDropDownText"
+            // var style = new GUIStyle(); // GUI.skin.textArea (GUIStyle)"OL TextField" //  (GUIStyle)"TextFieldDropDownText"
             // style.wordWrap = true;
             // style.alignment = TextAnchor.LowerRight; // UpperLeft;
             // GUI.DrawTexture(textArea, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill); // to check rect
@@ -1463,7 +1463,7 @@ namespace Iwsd.YamlAssetBrowser
             GUILayout.BeginVertical("", (GUIStyle)"HelpBox"); // "Tooltip", "VCS_StickyNote", "U2D.createRect", "grey_border"
             GUILayout.Space(10);
             EditorGUILayout.LabelField("VRC_Iwsd / YAML Asset Browser", (GUIStyle)"ProgressBarBar", GUILayout.ExpandWidth(true)); // new GUIStyle(){fontStyle = FontStyle.Bold});
-            EditorGUILayout.LabelField("v 0.1");
+            EditorGUILayout.LabelField("  ver. YamlAssetBrowser-20190904");
             GUILayout.Space(10);
             if (GUILayout.Button("Open online help", GUILayout.ExpandWidth(false)))
             {
