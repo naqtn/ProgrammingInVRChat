@@ -1467,7 +1467,7 @@ namespace Iwsd.YamlAssetBrowser
             GUILayout.Space(10);
             if (GUILayout.Button("Open online help", GUILayout.ExpandWidth(false)))
             {
-                Help.BrowseURL("http://vrcprog.hatenablog.jp/draft/6LNeESUfy1dUqQd-gJY4SnpZ45s");
+                Help.BrowseURL("http://vrcprog.hatenablog.jp/entry/mywork-yaml-asset-browser");
             }
             GUILayout.Space(10);
             GUILayout.EndVertical();
