@@ -63,13 +63,7 @@ by naqtn
     - m_Modifications
         - propertyPath: m_RootOrder
 
-- make a release
-    - write guide document
-    - make package
-    - make release at GitHub
-    - make support page on blog
-
-- multi column feature
+- multi column tree
     - (For what feature? necessary?)
 
 
@@ -94,11 +88,12 @@ by naqtn
     - select an object in Hierarchy view or Project view as usual
     - open prefab if selected object uses prefab
 
-- asset name field: a label that shows what resource is currently loaded
+- asset path field
+    - a text field that shows what resource is currently loaded
     - text is copyable
     - accept drop and load if it can
         - This is only way to load for some file type (.asset)
-        - It's also able to accept file from outside of Unity Editor (Explore in Windows)
+        - It's also able to accept file from outside of Unity Editor (Explorer on Windows)
         - Hint: scene icon in Hierarchy view to load scene file
 
 - Show YAML objects (documents) in tree view
@@ -174,6 +169,9 @@ by naqtn
     - Asset internal info
         - https://forum.unity.com/threads/yaml-fileid-hash-function-for-dll-scripts.252075/#post-3779584
         > there is now a ".info" file created in the Library\metadata folder for each external assembly
+    - "Resources/unity_builtin_extra", "Library/unity default resources"
+        - https://answers.unity.com/questions/1377941/getassetpath-returning-incomplete-path-for-default.html
+        - https://stackoverflow.com/questions/56159442/how-to-get-the-path-and-file-size-of-unity-built-in-assets
 - Tools
     - [ReferenceViewer](https://github.com/anchan828/ReferenceViewer)
         - https://qiita.com/akihiro_0228/items/4dc0d12b90629a5fdcac
@@ -1497,7 +1495,6 @@ namespace Iwsd.YamlAssetBrowser
         [MenuItem("Window/VRC_Iwsd/Yaml Asset Browser")]
         static void OpenYamlAssetBrowser()
         {
-            // EditorWindow.GetWindow<Browser>("Asset Browser");
             var window = CreateInstance<Browser>();
             window.Show();
         }
