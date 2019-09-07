@@ -105,6 +105,19 @@ namespace Iwsd
             Iwlog.Debug("VRC_Trigger references in UIEvents replaced for runtime. Count=" + procCount);
         }
 
+        static private void Setup_VRC_UiShape(Camera playerCamera)
+        {
+            foreach (VRCSDK2.VRC_UiShape comp in UnityEngine.Resources.FindObjectsOfTypeAll(typeof(VRCSDK2.VRC_UiShape)))
+            {
+
+                Canvas foundCanvas = comp.GetComponent<Canvas>();
+                if(foundCanvas != null)
+                {
+                    foundCanvas.worldCamera = playerCamera;
+                }
+            }
+        }
+
         static private int ReplaceTriggerRefferenceInUIEvent(System.Type UIComponentType, string EventPropName)
         {
             int procCount = 0;
@@ -237,6 +250,13 @@ namespace Iwsd
                 return false;
             }
             LocalPlayerContext.SetLocalPlayer(playerCtrl);
+
+            if(LocalPlayerContext.SceneDescriptor.ReferenceCamera != null)
+            {
+                playerCtrl.PlayerCamera.GetComponent<PlayerCameraControl>().refCameraObj = LocalPlayerContext.SceneDescriptor.ReferenceCamera;
+            }
+
+            Setup_VRC_UiShape(playerCtrl.PlayerCamera.GetComponent<Camera>());
 
             SetupQuickMenu(playerCtrl);
             
