@@ -17,3 +17,6 @@
     - Select one from LocalPlayer layer (default), Player layer, None at quick menu
 - Add Interact() method support.
     - It enables OnInteract trigger from Animation Event and uGUI Event.
+- Support reference camera of VRC_SceneDescriptor
+    - including post processing version 2
+    

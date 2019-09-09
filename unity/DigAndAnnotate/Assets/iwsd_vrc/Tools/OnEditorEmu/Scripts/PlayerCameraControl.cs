@@ -15,10 +15,12 @@
  * date : 2017/12
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
-using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.Assertions;
 
 namespace Iwsd
 {
@@ -31,6 +33,7 @@ namespace Iwsd
         [SerializeField]
         public float smoothing = 2.0f;
 
+        // Reference camera. This class read values from this object as a template. (@see VRC_SceneDescriptor.ReferenceCamera )
         [HideInInspector]
         public GameObject refCameraObj = null;
 
@@ -60,9 +63,10 @@ namespace Iwsd
                 playerCamera = GetComponent<Camera>();
                 if (playerCamera == null) {
                     Iwlog.Error(gameObject, "Camera not found.");
-                } else
+                }
+                else
                 {
-                    if(refCameraObj != null)
+                    if (refCameraObj != null)
                     {
                         CopyCameraSettings(refCameraObj);
                     }
@@ -83,29 +87,67 @@ namespace Iwsd
             Cursor.visible = false;
         }
 
-        public void CopyCameraSettings(GameObject refCameraObj)
+        private void CopyCameraSettings(GameObject refCameraObj)
         {
             Camera refCamera = refCameraObj.GetComponent<Camera>();
-            if(playerCamera != null)
+            if (refCamera == null)
             {
-                playerCamera.nearClipPlane = refCamera.nearClipPlane;
-                playerCamera.farClipPlane = refCamera.farClipPlane;
-                playerCamera.clearFlags = refCamera.clearFlags;
-                playerCamera.backgroundColor = refCamera.backgroundColor;
-                playerCamera.allowHDR = refCamera.allowHDR;
+                // VRC_SceneDescriptor.ReferenceCamera is just a GameObject.
+                // It could be possible without a Camera component.
+                Iwlog.Warn(refCameraObj, "Camera not found in VRC_SceneDescriptor.ReferenceCamera.");
+                return;
             }
 
-            PostProcessLayer refCameraLayer = refCamera.GetComponent<PostProcessLayer>();
-            if(refCameraLayer != null)
-            {
-                PostProcessLayer playerCameraLayer = playerCamera.gameObject.AddComponent<PostProcessLayer>();
-                playerCameraLayer.volumeTrigger = playerCamera.transform;
-                playerCameraLayer.volumeLayer = refCameraLayer.volumeLayer;
-                #if UNITY_EDITOR
-                playerCameraLayer.Init((PostProcessResources)UnityEditor.AssetDatabase.LoadAssetAtPath("Assets/PostProcessing/PostProcessResources.asset", typeof(PostProcessResources)));
-                #endif
-            }
+            Assert.IsNotNull(playerCamera);
+
+            playerCamera.nearClipPlane = refCamera.nearClipPlane;
+            playerCamera.farClipPlane = refCamera.farClipPlane;
+            playerCamera.clearFlags = refCamera.clearFlags;
+            playerCamera.backgroundColor = refCamera.backgroundColor;
+            playerCamera.allowHDR = refCamera.allowHDR;
+
+            CopyPostProcessingV2(refCamera, playerCamera);
         }
+
+        private void CopyPostProcessingV2(Camera srcCamera, Camera dstCamera)
+        {
+            var ppLayerType = Type.GetType("UnityEngine.Rendering.PostProcessing.PostProcessLayer, Unity.Postprocessing.Runtime");
+            if (ppLayerType == null)
+            {
+                Iwlog.Trace("PostProcessing v2 not exists");
+            }
+            else
+            {
+                var srcPpLayerComp = srcCamera.GetComponent(ppLayerType);
+                if (srcPpLayerComp != null)
+                {
+                    var dstPpLayerComp = dstCamera.GetComponent(ppLayerType);
+                    if (dstPpLayerComp != null)
+                    {
+                        Iwlog.Warn(dstCamera.gameObject, "Unexpected PostProcessLayer exists.");
+                    }
+                    else
+                    {
+                        dstPpLayerComp = dstCamera.gameObject.AddComponent(ppLayerType);
+                    }
+
+                    #if UNITY_EDITOR                    
+                    UnityEditor.EditorUtility.CopySerialized(srcPpLayerComp, dstPpLayerComp);
+                    #else
+                    Iwlog.Error("not implemented for runtime");
+                    #endif
+                    
+                    // replace volumeTrigger if camera itself. (That is usual case)
+                    FieldInfo fldInfo = ppLayerType.GetField("volumeTrigger");
+                    Assert.IsNotNull(fldInfo);
+                    if ((Transform)fldInfo.GetValue(srcPpLayerComp) == srcCamera.transform)
+                    {
+                        fldInfo.SetValue(dstPpLayerComp, dstCamera.transform);
+                    }
+                }
+            }            
+        }
+
 
         // MEMO [raycast basics (jp)](http://megumisoft.hatenablog.com/entry/2015/08/13/172136)
 

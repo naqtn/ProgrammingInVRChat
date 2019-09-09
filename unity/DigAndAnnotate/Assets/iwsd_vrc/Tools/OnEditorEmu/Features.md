@@ -13,14 +13,14 @@
     - use down
 - world descriptor setting (not completed)
     - player spawn position
-	- reference camera (settings copied to the player camera including post processing)
+	- reference camera (settings copied to the player camera including post processing v2)
 - Quick menu
     - (as world space canvas "diegetic UI")
     - Toggle quick menu: TAB key
     - Operations
         - Respawn
         - Quit emulator program
-        - Select player collider (Player & PlayerLocal)
+        - Select player collider (Player, PlayerLocal, None)
 - mouse cursor capture
     - Press ESC key to exit from emulator
     - Click Game window to go back emulator
@@ -103,6 +103,7 @@
 
 - support VRC_SceneDescriptor setting
     - respawn height
+    - reference camera post processing v1
 - support VRC_PlayerMods
     - jump power
     - speed
