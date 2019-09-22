@@ -83,8 +83,19 @@ namespace Iwsd
             }
             
             drawType(type);
-
             EditorGUILayout.EndScrollView();
+
+            EditorGUILayout.BeginHorizontal();
+            using (new EditorGUI.DisabledScope(!(compSelection < selectTypes.Length)))
+            {
+                if (GUILayout.Button("Copy as JSON", GUILayout.ExpandWidth(false))) {
+                    GUIUtility.systemCopyBuffer = JsonUtility.ToJson(active.GetComponent(selectTypes[compSelection]), true);
+                }
+                if (GUILayout.Button("Copy with EditorJsonUtility", GUILayout.ExpandWidth(false))) {
+                    GUIUtility.systemCopyBuffer = EditorJsonUtility.ToJson(active.GetComponent(selectTypes[compSelection]), true);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
         private Type examingType;
