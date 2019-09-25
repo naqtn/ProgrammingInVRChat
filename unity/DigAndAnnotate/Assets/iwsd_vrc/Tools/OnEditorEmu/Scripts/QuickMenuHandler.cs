@@ -21,9 +21,15 @@ namespace Iwsd
             #endif
         }
 
-        public void ExecuteChangeColliderSetup(string name)
+        public void SetColliderActive_PlayerLocalLayer(bool b)
         {
-            LocalPlayerContext.ChangeColliderSetup(name);
+            LocalPlayerContext.ChangeColliderSetup("PlayerLocalLayer", b);
         }
+
+        public void SetColliderActive_PlayerLayer(bool b)
+        {
+            LocalPlayerContext.ChangeColliderSetup("PlayerLayer", b);
+        }
+
     }
 }

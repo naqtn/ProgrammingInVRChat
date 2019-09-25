@@ -11,8 +11,8 @@ namespace Iwsd
     public class InUnityDebug
     {
 
-        static string playerPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_Player";
-        static string quickMenuPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_QuickMenu";
+        private const string playerPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_Player";
+        private const string quickMenuPrefabPath = "iwsd_vrc/Tools/OnEditorEmu/Prefabs/Emu_QuickMenu";
 
         // This is entry point of this emulator.
         [PostProcessScene]
@@ -28,13 +28,15 @@ namespace Iwsd
                 // REFINE Is there smart way to alternate between simulator and VRC SDK uploading .
                 return;
             }
-    
+
             // NOTE https://anchan828.github.io/editor-manual/web/callbacks.html
             // EditorSceneManager.GetSceneManagerSetup()
-        
+
             Setup_SceneDescriptor();
             Setup_TriggersComponents();
             Setup_ReplaceTriggerRefference();
+
+            Setup_AudioListeners();
             
             SpawnPlayerObject();
         }
@@ -67,6 +69,30 @@ namespace Iwsd
             LocalPlayerContext.SceneDescriptor = descriptor;
         }
 
+        // Suppress messages for AudioListeners
+        // "There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene."
+        // PlayerCamera is to be expected to add later.
+        static private void Setup_AudioListeners()
+        {
+            foreach (UnityEngine.AudioListener comp in Object.FindObjectsOfType(typeof(UnityEngine.AudioListener)))
+            {
+                comp.enabled = false;
+            }
+        }
+
+        static private void Setup_VRC_UiShape(Camera playerCamera)
+        {
+            foreach (VRCSDK2.VRC_UiShape comp in UnityEngine.Resources.FindObjectsOfTypeAll(typeof(VRCSDK2.VRC_UiShape)))
+            {
+
+                Canvas foundCanvas = comp.GetComponent<Canvas>();
+                if (foundCanvas)
+                {
+                    foundCanvas.worldCamera = playerCamera;
+                }
+            }
+        }
+
         ////////////////////////////////////////////////////////////
 
         // https://answers.unity.com/questions/218429/how-to-know-if-a-gameobject-is-a-prefab.html
@@ -76,7 +102,7 @@ namespace Iwsd
             return (PrefabUtility.GetPrefabParent(comp.gameObject) == null)
                 && (PrefabUtility.GetPrefabObject(comp.gameObject.transform) != null);
         }
-        
+
         // (see also. Execute_SpawnObject)
         static private void Setup_TriggersComponents()
         {
@@ -88,10 +114,10 @@ namespace Iwsd
                 {
                     continue;
                 }
-                
+
                 // Emu_Trigger find brother VRC_Trigger by itself
                 var emu_trigger = triggerComp.gameObject.AddComponent<Emu_Trigger>();
- 
+
                 emu_trigger.debugString = triggerComp.gameObject.name;
             }
         }
@@ -103,19 +129,6 @@ namespace Iwsd
             procCount += ReplaceTriggerRefferenceInUIEvent(typeof(UnityEngine.UI.InputField), "m_OnValueChanged");
             procCount += ReplaceTriggerRefferenceInUIEvent(typeof(UnityEngine.UI.InputField), "m_OnEndEdit");
             Iwlog.Debug("VRC_Trigger references in UIEvents replaced for runtime. Count=" + procCount);
-        }
-
-        static private void Setup_VRC_UiShape(Camera playerCamera)
-        {
-            foreach (VRCSDK2.VRC_UiShape comp in UnityEngine.Resources.FindObjectsOfTypeAll(typeof(VRCSDK2.VRC_UiShape)))
-            {
-
-                Canvas foundCanvas = comp.GetComponent<Canvas>();
-                if(foundCanvas != null)
-                {
-                    foundCanvas.worldCamera = playerCamera;
-                }
-            }
         }
 
         static private int ReplaceTriggerRefferenceInUIEvent(System.Type UIComponentType, string EventPropName)
@@ -142,7 +155,7 @@ namespace Iwsd
 
             // To modify persistent part of UnityEventBase, we must use persistent API.
             var sComp = new SerializedObject(comp);
-            
+
             var uiEvent = sComp.FindProperty(EventPropName);
             var m_PersistentCalls = uiEvent.FindPropertyRelative("m_PersistentCalls");
             var m_Calls = m_PersistentCalls.FindPropertyRelative("m_Calls");
@@ -170,7 +183,7 @@ namespace Iwsd
             {
                 sComp.ApplyModifiedPropertiesWithoutUndo();
             }
-            
+
             return (0 < procCount);
         }
 
@@ -185,9 +198,9 @@ namespace Iwsd
         //         m_MethodName: set_layer
 
 
-        
+
         ////////////////////////////////////////////////////////////
-        
+
         static private GameObject SpawnFromPrefab(string path)
         {
             var prefab = Resources.Load<GameObject>(path);
@@ -196,14 +209,14 @@ namespace Iwsd
                 Iwlog.Error("Prefab not found. path='" + path + "'");
                 return null;
             }
-            
+
             var instance = Object.Instantiate(prefab);
             var scene = EditorSceneManager.GetActiveScene();
             EditorSceneManager.MoveGameObjectToScene(instance, scene);
 
             return instance;
         }
-        
+
         static private bool SetupQuickMenu(PlayerControl playerCtrl)
         {
             var quickMenu = SpawnFromPrefab(quickMenuPrefabPath);
@@ -222,7 +235,7 @@ namespace Iwsd
                 Iwlog.Error("QuickMenu Canvas component not found.");
                 return false;
             }
-            
+
             var camera = playerCtrl.PlayerCamera.GetComponent<Camera>();
             canvas.worldCamera = camera;
 
@@ -251,15 +264,10 @@ namespace Iwsd
             }
             LocalPlayerContext.SetLocalPlayer(playerCtrl);
 
-            if(LocalPlayerContext.SceneDescriptor.ReferenceCamera != null)
-            {
-                playerCtrl.PlayerCamera.GetComponent<PlayerCameraControl>().refCameraObj = LocalPlayerContext.SceneDescriptor.ReferenceCamera;
-            }
-
             Setup_VRC_UiShape(playerCtrl.PlayerCamera.GetComponent<Camera>());
 
             SetupQuickMenu(playerCtrl);
-            
+
             LocalPlayerContext.MovePlayerToSpawnLocation();
 
             return true;

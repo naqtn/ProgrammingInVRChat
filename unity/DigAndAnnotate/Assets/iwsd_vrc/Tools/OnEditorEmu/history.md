@@ -13,10 +13,12 @@
     - Replace VRC_Trigger reference to emulator Emu_Trigger at runtime.
     - Not supported when UI components are in newly spawned object.
 - Add support delay of trigger execution
-- Add player collider selection feature
-    - Select one from LocalPlayer layer (default), Player layer, None at quick menu
+- Fix and improve player collider
+    - Add player collider selection feature to quick menu
+        - you can select from (1) LocalPlayer layer (default), (2) Player layer to test as remote player, (3) None
+    - Fix default active collider. In previous release Player layer is activated by mistake.
+    - Fix Emu_Player prefab PlayerLayer collider IsTrigger to be true
 - Add Interact() method support.
     - It enables OnInteract trigger from Animation Event and uGUI Event.
 - Support reference camera of VRC_SceneDescriptor
-    - including post processing version 2
-    
+    - Including post processing version 2

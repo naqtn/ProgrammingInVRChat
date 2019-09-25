@@ -34,8 +34,13 @@ namespace Iwsd
         public float smoothing = 2.0f;
 
         // Reference camera. This class read values from this object as a template. (@see VRC_SceneDescriptor.ReferenceCamera )
-        [HideInInspector]
-        public GameObject refCameraObj = null;
+        private GameObject refCameraObj;
+
+        // This method is only for holding the object. Reading values are done at startup.
+        internal void SetReferenceCamera(GameObject obj)
+        {
+            refCameraObj = obj;
+        }
 
         // mouse holizontal move to turn left-right
         private  GameObject character;
@@ -64,12 +69,12 @@ namespace Iwsd
                 if (playerCamera == null) {
                     Iwlog.Error(gameObject, "Camera not found.");
                 }
-                else
+                else if (refCameraObj != null)
                 {
-                    if (refCameraObj != null)
-                    {
-                        CopyCameraSettings(refCameraObj);
-                    }
+                    CopyCameraSettings(refCameraObj);
+                    
+                    // There seems to be no necessaries to inactivate, but do it because VRChat client (w_2019.3.2 build 860) does. 
+                    refCameraObj.SetActive(false);
                 }
             }
 
@@ -94,7 +99,9 @@ namespace Iwsd
             {
                 // VRC_SceneDescriptor.ReferenceCamera is just a GameObject.
                 // It could be possible without a Camera component.
-                Iwlog.Warn(refCameraObj, "Camera not found in VRC_SceneDescriptor.ReferenceCamera.");
+                var mes = "Camera not found in VRC_SceneDescriptor.ReferenceCamera.";
+                Iwlog.Warn(refCameraObj, mes);
+                EditorEnvUtil.ShowNotificationOnGameView(mes);
                 return;
             }
 

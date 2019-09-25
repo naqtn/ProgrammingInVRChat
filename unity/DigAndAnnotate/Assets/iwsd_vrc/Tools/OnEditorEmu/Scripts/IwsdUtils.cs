@@ -75,4 +75,22 @@ namespace Iwsd
             return s.Substring(i + 1);
         }
     }
+
+
+    class EditorEnvUtil
+    {
+        public static void ShowNotificationOnGameView(string str)
+        {
+            ShowNotificationOnGameView(new GUIContent(str));
+        }
+        
+        public static void ShowNotificationOnGameView(GUIContent content)
+        {
+            #if UNITY_EDITOR                    
+            var assembly = typeof(UnityEditor.EditorWindow).Assembly;
+            var type = assembly.GetType("UnityEditor.GameView");
+            UnityEditor.EditorWindow.GetWindow(type).ShowNotification(content);
+            #endif
+        }
+    }
 }

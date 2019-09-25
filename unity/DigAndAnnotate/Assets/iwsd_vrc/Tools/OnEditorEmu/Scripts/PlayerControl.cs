@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.EventSystems;
+using UnityEngine.Assertions;
 
 namespace Iwsd
 {
@@ -30,18 +31,30 @@ namespace Iwsd
 
         private void SetupCamera()
         {
-            var orgMainCam = GameObject.FindWithTag("MainCamera");
-            if (orgMainCam != null) {
-                orgMainCam.SetActive(false);
+
+            // Disable "MainCamera" placed in the scene to make player camera as "MainCamera" 
+            foreach (var camObj in GameObject.FindGameObjectsWithTag("MainCamera"))
+            {
+                var cam = camObj.GetComponent<Camera>();
+                if (cam)
+                {
+                    cam.enabled = false;
+                }
             }
 
-            // TODO use VRC_SceneDescriptor.ReferenceCamera as template
-            if (PlayerCamera == null) {
-                Iwlog.Error(gameObject, "PlayerCamera not specified.");
-            } else {
-                PlayerCamera.SetActive(true);
+            Assert.IsNotNull(PlayerCamera, "PlayerCamera not specified.");
+
+            // To initialize run this PlayerControl first, child PlayerCamera secondary
+            Assert.IsFalse(PlayerCamera.activeSelf);
+            
+            var refCamObj = LocalPlayerContext.SceneDescriptor.ReferenceCamera;
+            if (refCamObj)
+            {
+                // Handling ReferenceCamera detail processes are delegated to PlayerCameraControl.
+                PlayerCamera.GetComponent<PlayerCameraControl>().SetReferenceCamera(refCamObj);
             }
-        
+
+            PlayerCamera.SetActive(true);
         }
 
         // CHECK Is CharacterController good enough?
@@ -132,6 +145,12 @@ namespace Iwsd
                     QuickMenu.SetActive(true);
                 }
             }
+            if (Input.GetKeyDown(KeyCode.F12))
+            {
+                // For interactive print debug
+                // Iwlog.Debug("Hi from F12");
+                // Iwlog.Debug("Camera.main=" + Camera.main);
+            }
         }
 
         
@@ -153,33 +172,16 @@ namespace Iwsd
             StartCoroutine(coroutine);
         }
 
-        public void ChangeColliderSetup(string name)
+        public void ChangeColliderSetup(string name, bool b)
         {
             var colliders = Colliders.transform;
 
-            Transform sel;
-            if (name == "None")
-            {
-                sel = null;
-            }
-            else
-            {
-                sel = colliders.Find(name);
-                if (sel == null)
-                {
-                    Iwlog.Error("unknown ColliderSetup. name='" + name + "'");
-                    return;
-                }
-            }
+            Transform sel = colliders.Find(name);
+            Assert.IsNotNull(sel, "unknown ColliderSetup. name='" + name + "'");
 
-            foreach (Transform c in colliders)
-            {
-                // I prefer SetActive to collider component enabled.
-                // Because this is not so often operation and SetActive can change visual component also.
-                c.gameObject.SetActive(c == sel);
-            }
-            
+            // I prefer SetActive to collider component enabled.
+            // Because this is not so often operation and SetActive can change visual component also.
+            sel.gameObject.SetActive(b);
         }
     }
-
 }

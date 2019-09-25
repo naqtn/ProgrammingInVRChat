@@ -12,7 +12,7 @@ namespace Iwsd
 
         void StartCoroutineUnderPlayer(System.Collections.IEnumerator coroutine);
 
-        void ChangeColliderSetup(string name);
+        void ChangeColliderSetup(string name, bool b);
     }
 
     
@@ -196,9 +196,9 @@ namespace Iwsd
             LocalPlayer.StartCoroutineUnderPlayer(coroutine);
         }
 
-        public static void ChangeColliderSetup(string name)
+        public static void ChangeColliderSetup(string name, bool b)
         {
-            LocalPlayer.ChangeColliderSetup(name);
+            LocalPlayer.ChangeColliderSetup(name, b);
         }
     }
 
