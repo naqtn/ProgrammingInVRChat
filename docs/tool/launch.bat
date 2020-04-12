@@ -37,6 +37,12 @@ REM   not need Enter key, timeout supported, beep sound when unexpected key type
 REM others: need Enter key, no timeout, silent.
 set one_key_mode=t
 
+REM default profile number:
+set profile_no=0
+
+REM Default logging option ('on' or 'off')
+set log_sw=off
+
 REM ==== Settings section END ====
 
 setlocal EnableDelayedExpansion
@@ -48,32 +54,109 @@ if %verbose%==t (
   echo world=%2
 )
 
-if %one_key_mode%==t (
-  echo.
-  choice /C dv /D %default% /T %timeout% /M "Type 'd' for Desktop mode , 'v' for VR mode "
-  set mode_choice=!ERRORLEVEL!
+if not %one_key_mode%==t goto :enter_key_mode
 
-) else (
-  echo Select mode:
-  echo   'd' and Enter for Desktop mode,
-  echo   'v' and Enter for VR mode, 
-  echo   just Enter for default '%default%'
-  set /p mode_choice=
+echo Type 'd' to launch in Desktop mode , 'v' to in VR mode
+echo.
+echo Additional options:
+echo   '0' to use profile 0,  '1', '2' ... '3' use profile 3
+echo   'l' for toggle logging feature
 
-  if not "!mode_choice!"=="d" if not "!mode_choice!"=="v" (
-    set mode_choice=%default%
+:one_key_mode_loop
+echo.
+REM  /M "Type d,v,0,1,2,3, or l"
+choice /C dv0123l /D %default% /T %timeout%
+set mode_choice=!ERRORLEVEL!
+
+if "!mode_choice!"=="3" (
+  set profile_no=0
+  echo profile "!profile_no!" selected
+  goto :one_key_mode_loop
+) else if "!mode_choice!"=="4" (
+  set profile_no=1
+  echo profile "!profile_no!" selected
+  goto :one_key_mode_loop
+) else if "!mode_choice!"=="5" (
+  set profile_no=2
+  echo profile "!profile_no!" selected
+  goto :one_key_mode_loop
+) else if "!mode_choice!"=="6" (
+  set profile_no=3
+  echo profile "!profile_no!" selected
+  goto :one_key_mode_loop
+) else if "!mode_choice!"=="7" (
+  if "!log_sw!"=="on" (
+    set log_sw=off
+  ) else (
+    set log_sw=on
   )
-
-  if "!mode_choice!"=="d" (
-    set mode_choice=1
-  ) else if "!mode_choice!"=="v" (
-    set mode_choice=2
-  )
+  echo logging will be "!log_sw!"
+  goto :one_key_mode_loop
 )
+
+goto :end_user_choice
+
+:enter_key_mode
+
+echo.
+echo Select mode:
+echo   'd' and Enter for Desktop mode,
+echo   'v' and Enter for VR mode, 
+echo   just Enter for default '%default%'
+echo.
+echo Additional option:
+echo   '0' to use profile 0,  '1', '2' ... '3' use profile 3
+echo   'l' for toggle logging feature
+
+:enter_key_mode_loop
+set /p mode_choice=
+
+if "!mode_choice!"=="" (
+  set mode_choice=%default%
+)
+if "!mode_choice!"=="d" (
+  set mode_choice=1
+) else if "!mode_choice!"=="v" (
+  set mode_choice=2
+) else if "!mode_choice!"=="0" (
+  set profile_no=0
+  echo profile "!profile_no!" selected
+  goto :enter_key_mode_loop
+) else if "!mode_choice!"=="1" (
+  set profile_no=1
+  echo profile "!profile_no!" selected
+  goto :enter_key_mode_loop
+) else if "!mode_choice!"=="2" (
+  set profile_no=2
+  echo profile "!profile_no!" selected
+  goto :enter_key_mode_loop
+) else if "!mode_choice!"=="3" (
+  set profile_no=3
+  echo profile "!profile_no!" selected
+  goto :enter_key_mode_loop
+) else if "!mode_choice!"=="l" (
+  if "!log_sw!"=="on" (
+    set log_sw=off
+  ) else (
+    set log_sw=on
+  )
+  echo logging will be "!log_sw!"
+  goto :enter_key_mode_loop
+) else if "!mode_choice!"=="?" (
+  goto :enter_key_mode
+) else (
+  echo invalid input
+  goto :enter_key_mode_loop
+)
+
+:end_user_choice
 
 if %verbose%==t (
   echo.
-  echo mode_choice=%mode_choice%
+  echo Selected options:
+  echo   mode_choice=%mode_choice%
+  echo   profile_no="%profile_no%"
+  echo   log_sw=%log_sw%
 )
 
 set opt_start=
@@ -89,11 +172,19 @@ if "%mode_choice%"=="1" (
   echo Starting in VR mode
   set opt_no_vr=
 ) else (
+  echo launch.bat error.
+  pause
   endlocal
   exit
 )
 
+
+set opt_log=
+if "%log_sw%"=="on" (
+  set opt_log=--enable-debug-gui --enable-sdk-log-levels --enable-udon-debug-logging
+)
+
 cd /d %1
-%opt_start% VRChat.exe %opt_no_vr% %2
+%opt_start% VRChat.exe %opt_no_vr% %opt_log% --profile=%profile_no% %2
 
 endlocal
