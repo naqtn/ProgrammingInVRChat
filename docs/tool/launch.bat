@@ -184,7 +184,9 @@ if "%log_sw%"=="on" (
   set opt_log=--enable-debug-gui --enable-sdk-log-levels --enable-udon-debug-logging
 )
 
-cd /d %1
+if not "%1"=="" (
+  cd /d %1
+)
 %opt_start% VRChat.exe %opt_no_vr% %opt_log% --profile=%profile_no% %2
 
 endlocal
