@@ -817,16 +817,16 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(8, true, "Behaviour", typeof(UnityEngine.Behaviour), typeof(YamlBehaviour)),
             new UnityTypeInfo(9, false, "GameManager", null),
             new UnityTypeInfo(11, false, "AudioManager", null), // hidden typeof(UnityEditor.AudioManager)
-            new UnityTypeInfo(12, true, "ParticleAnimator", typeof(UnityEngine.ParticleAnimator)),
+            new UnityTypeInfo(12, true, "ParticleAnimator", null), // obsolete typeof(UnityEngine.ParticleAnimator)),
             new UnityTypeInfo(13, false, "InputManager", null), // hidden typeof(UnityEditor.InputManager)
-            new UnityTypeInfo(15, true, "EllipsoidParticleEmitter", typeof(UnityEngine.EllipsoidParticleEmitter)),
+            new UnityTypeInfo(15, true, "EllipsoidParticleEmitter", null), // obsolete typeof(UnityEngine.EllipsoidParticleEmitter)),
             new UnityTypeInfo(18, false, "EditorExtension", null),
             new UnityTypeInfo(19, false, "Physics2DSettings", null), // hidden typeof(UnityEditor.Physics2DSettings)
             new UnityTypeInfo(20, true, "Camera", typeof(UnityEngine.Camera)),
             new UnityTypeInfo(21, false, "Material", typeof(UnityEngine.Material)),
             new UnityTypeInfo(23, true, "MeshRenderer", typeof(UnityEngine.MeshRenderer)),
             new UnityTypeInfo(25, true, "Renderer", typeof(UnityEngine.Renderer)),
-            new UnityTypeInfo(26, true, "ParticleRenderer", typeof(UnityEngine.ParticleRenderer)),
+            new UnityTypeInfo(26, true, "ParticleRenderer", null), // obsolete typeof(UnityEngine.ParticleRenderer)),
             new UnityTypeInfo(27, false, "Texture", typeof(UnityEngine.Texture)),
             new UnityTypeInfo(28, false, "Texture2D", typeof(UnityEngine.Texture2D)),
             new UnityTypeInfo(29, false, "OcclusionCullingSettings", null),
@@ -864,8 +864,8 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(83, false, "AudioClip", typeof(UnityEngine.AudioClip)),
             new UnityTypeInfo(84, false, "RenderTexture", typeof(UnityEngine.RenderTexture)),
             new UnityTypeInfo(86, false, "CustomRenderTexture", typeof(UnityEngine.CustomRenderTexture)),
-            new UnityTypeInfo(87, true, "MeshParticleEmitter", typeof(UnityEngine.MeshParticleEmitter)),
-            new UnityTypeInfo(88, true, "ParticleEmitter", typeof(UnityEngine.ParticleEmitter)),
+            new UnityTypeInfo(87, true, "MeshParticleEmitter", null), // obsolete typeof(UnityEngine.MeshParticleEmitter)),
+            new UnityTypeInfo(88, true, "ParticleEmitter", null), // obsolete typeof(UnityEngine.ParticleEmitter)),
             new UnityTypeInfo(89, false, "Cubemap", typeof(UnityEngine.Cubemap)),
             new UnityTypeInfo(90, false, "Avatar", typeof(UnityEngine.Avatar)),
             new UnityTypeInfo(91, false, "AnimatorController", typeof(UnityEditor.Animations.AnimatorController)),
@@ -912,7 +912,7 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(145, true, "SpringJoint", typeof(UnityEngine.SpringJoint)),
             new UnityTypeInfo(146, true, "WheelCollider", typeof(UnityEngine.WheelCollider)),
             new UnityTypeInfo(147, false, "ResourceManager", null),
-            new UnityTypeInfo(148, true, "NetworkView", typeof(UnityEngine.NetworkView)),
+            new UnityTypeInfo(148, true, "NetworkView", null), // obsolete typeof(UnityEngine.NetworkView)),
             new UnityTypeInfo(149, false, "NetworkManager", null),
             new UnityTypeInfo(150, false, "PreloadData", null),
             new UnityTypeInfo(152, false, "MovieTexture", typeof(UnityEngine.MovieTexture)),
@@ -936,9 +936,9 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(181, false, "AudioFilter", null),
             new UnityTypeInfo(182, true, "WindZone", typeof(UnityEngine.WindZone)),
             new UnityTypeInfo(183, true, "Cloth", typeof(UnityEngine.Cloth)),
-            new UnityTypeInfo(184, false, "SubstanceArchive", typeof(UnityEditor.SubstanceArchive)),
-            new UnityTypeInfo(185, false, "ProceduralMaterial", typeof(UnityEngine.ProceduralMaterial)),
-            new UnityTypeInfo(186, false, "ProceduralTexture", typeof(UnityEngine.ProceduralTexture)),
+            new UnityTypeInfo(184, false, "SubstanceArchive", null), // obsolete typeof(UnityEditor.SubstanceArchive)),
+            new UnityTypeInfo(185, false, "ProceduralMaterial", null), // obsolete typeof(UnityEngine.ProceduralMaterial)),
+            new UnityTypeInfo(186, false, "ProceduralTexture", null), // obsolete typeof(UnityEngine.ProceduralTexture)),
             new UnityTypeInfo(187, false, "Texture2DArray", typeof(UnityEngine.Texture2DArray)),
             new UnityTypeInfo(188, false, "CubemapArray", typeof(UnityEngine.CubemapArray)),
             new UnityTypeInfo(191, true, "OffMeshLink", typeof(UnityEngine.AI.OffMeshLink)),
@@ -1050,7 +1050,7 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(1109, false, "AnimatorTransition", typeof(UnityEditor.Animations.AnimatorTransition)),
             new UnityTypeInfo(1110, false, "SpeedTreeImporter", typeof(UnityEditor.SpeedTreeImporter)),
             new UnityTypeInfo(1111, false, "AnimatorTransitionBase", typeof(UnityEditor.Animations.AnimatorTransitionBase)),
-            new UnityTypeInfo(1112, false, "SubstanceImporter", typeof(UnityEditor.SubstanceImporter)),
+            new UnityTypeInfo(1112, false, "SubstanceImporter", null), // obsolete typeof(UnityEditor.SubstanceImporter)),
             new UnityTypeInfo(1113, false, "LightmapParameters", typeof(UnityEditor.LightmapParameters)),
             new UnityTypeInfo(1120, false, "LightingDataAsset", typeof(UnityEditor.LightingDataAsset)),
             new UnityTypeInfo(1124, false, "SketchUpImporter", null),
@@ -1086,6 +1086,63 @@ namespace Iwsd.UnityYamlObjects {
             new UnityTypeInfo(1839735485, true, "Tilemap", typeof(UnityEngine.Tilemaps.Tilemap)),
             new UnityTypeInfo(2089858483, false, "ScriptedImporter", null),
             new UnityTypeInfo(2126867596, false, "TilemapEditorUserSettings", null), // hidden typeof(UnityEditor.TilemapEditorUserSettings)
+#if UNITY_2018_4_OR_NEWER
+            new UnityTypeInfo(41386430, false, "AssetImporterLog", null),
+            new UnityTypeInfo(73398921, false, "VFXRenderer", null),
+            new UnityTypeInfo(76251197, false, "SerializableManagedRefTestClass", null),
+            new UnityTypeInfo(181963792, false, "Preset", null),
+            new UnityTypeInfo(277625683, false, "EmptyObject", null),
+            new UnityTypeInfo(285090594, false, "IConstraint", null),
+            new UnityTypeInfo(293259124, false, "TestObjectWithSpecialLayoutOne", null),
+            new UnityTypeInfo(294290339, false, "AssemblyDefinitionReferenceImporter", null),
+            new UnityTypeInfo(334799969, false, "SiblingDerived", null),
+            new UnityTypeInfo(342846651, false, "TestObjectWithSerializedMapStringNonAlignedStruct", null),
+            new UnityTypeInfo(367388927, false, "SubDerived", null),
+            new UnityTypeInfo(369655926, false, "AssetImportInProgressProxy", null),
+            new UnityTypeInfo(426301858, false, "EditorProjectAccess", null),
+            new UnityTypeInfo(468431735, false, "PrefabImporter", null),
+            new UnityTypeInfo(478637458, false, "TestObjectWithSerializedArray", null),
+            new UnityTypeInfo(478637459, false, "TestObjectWithSerializedAnimationCurve", null),
+            new UnityTypeInfo(646504946, false, "RendererFake", null),
+            new UnityTypeInfo(662584278, false, "AssemblyDefinitionReferenceAsset", null),
+            new UnityTypeInfo(877146078, false, "PlatformModuleSetup", null),
+            new UnityTypeInfo(895512359, false, "AimConstraint", null),
+            new UnityTypeInfo(937362698, false, "VFXManager", null),
+            new UnityTypeInfo(994735392, false, "VisualEffectSubgraph", null),
+            new UnityTypeInfo(994735403, false, "VisualEffectSubgraphOperator", null),
+            new UnityTypeInfo(994735404, false, "VisualEffectSubgraphBlock", null),
+            new UnityTypeInfo(1001480554, false, "Prefab", null),
+            new UnityTypeInfo(1027052791, false, "LocalizationImporter", null),
+            new UnityTypeInfo(1091556383, false, "Derived", null),
+            new UnityTypeInfo(1111377672, false, "PropertyModificationsTargetTestObject", null),
+            new UnityTypeInfo(1114811875, false, "ReferencesArtifactGenerator", null),
+            new UnityTypeInfo(1154873562, false, "SceneVisibilityState", null),
+            new UnityTypeInfo(1183024399, false, "LookAtConstraint", null),
+            new UnityTypeInfo(1223240404, false, "MultiArtifactTestImporter", null),
+            new UnityTypeInfo(1386491679, false, "PresetManager", null),
+            new UnityTypeInfo(1392443030, false, "TestObjectWithSpecialLayoutTwo", null),
+            new UnityTypeInfo(1403656975, false, "StreamingManager", null),
+            new UnityTypeInfo(1542919678, false, "StreamingController", null),
+            new UnityTypeInfo(1628831178, false, "TestObjectVectorPairStringBool", null),
+            new UnityTypeInfo(1773428102, true, "ParentConstraint", typeof(UnityEngine.Animations.ParentConstraint)),
+            new UnityTypeInfo(1803986026, true, "FakeComponent", null), // hidden typeof(UnityEngine.FakeComponent)),
+            new UnityTypeInfo(1818360608, true, "PositionConstraint", typeof(UnityEngine.Animations.PositionConstraint)),
+            new UnityTypeInfo(1818360609, true, "RotationConstraint", typeof(UnityEngine.Animations.RotationConstraint)),
+            new UnityTypeInfo(1818360610, true, "ScaleConstraint", typeof(UnityEngine.Animations.ScaleConstraint)),
+            new UnityTypeInfo(1896753125, false, "PackageManifest", null),
+            new UnityTypeInfo(1896753126, false, "PackageManifestImporter", null),
+            new UnityTypeInfo(1953259897, false, "TerrainLayer", null),
+            new UnityTypeInfo(1971053207, true, "SpriteShapeRenderer", typeof(UnityEngine.Experimental.U2D.SpriteShapeRenderer)),
+            new UnityTypeInfo(1977754360, false, "NativeObjectType", null),
+            new UnityTypeInfo(1981279845, false, "TestObjectWithSerializedMapStringBool", null),
+            new UnityTypeInfo(1995898324, false, "SerializableManagedHost", null),
+            new UnityTypeInfo(2058629509, false, "VisualEffectAsset", null),
+            new UnityTypeInfo(2058629510, false, "VisualEffectImporter", null),
+            new UnityTypeInfo(2058629511, false, "VisualEffectResource", null),
+            new UnityTypeInfo(2059678085, false, "VisualEffectObject", null),
+            new UnityTypeInfo(2083052967, false, "VisualEffect", null),
+            new UnityTypeInfo(2083778819, false, "LocalizationAsset", null),
+#endif
         };
     }
 #pragma warning restore 618
@@ -1731,7 +1788,11 @@ namespace Iwsd.YamlAssetBrowser
         {
             var s = "Selected Object:\n";
             s += "  Name:" + active.name + "\n";
+#if UNITY_2018_4_OR_NEWER
+            var prefabParent = PrefabUtility.GetCorrespondingObjectFromSource(active);
+#else
             var prefabParent = PrefabUtility.GetPrefabParent(active);
+#endif
             s += "  PrefabParent:" + prefabParent + "\n";
             var loadFrom = prefabParent ?? active;
             var assetPath = AssetDatabase.GetAssetPath(loadFrom);
