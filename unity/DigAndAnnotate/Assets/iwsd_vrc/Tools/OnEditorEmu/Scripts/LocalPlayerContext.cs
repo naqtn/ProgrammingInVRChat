@@ -65,7 +65,11 @@ namespace Iwsd
 
             #if UNITY_EDITOR // This implementation requires UnityEditor.
             foreach (T obj in objects) {
-                var p =  UnityEditor.AssetDatabase.GetAssetPath(obj);
+                var p = UnityEditor.AssetDatabase.GetAssetPath(obj);
+                if (p == null || p.Length == 0) {
+                    // in-scene prefab references use the object name.
+                    p = obj.name;
+                }
                 Iwlog.Trace("asset path='" + p + "'");
                 if (map.ContainsKey(p)) {
                     Iwlog.Warn("Duplicate?: path='" + p + "'");

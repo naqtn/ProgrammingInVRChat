@@ -355,7 +355,7 @@ namespace Iwsd
         {
             if (vrcTrigger == null)
             {
-                Iwlog.Error(gameObject, "vrcTrigger == null");
+                Iwlog.Trace(gameObject, "vrcTrigger == null");
                 return Enumerable.Empty<VRCSDK2.VRC_Trigger.TriggerEvent>();
             }
             
@@ -741,7 +741,11 @@ namespace Iwsd
             {
                 comp.gameObject.GetOrAddComponent<Emu_Trigger>();
             }
-
+            // In-scene prefab references are spawned as inactive game objects.
+            // Usually the root object has an OnSpawn -> SetGameObjectActive true,
+            // but the Emu_Trigger cannot execute before the object is Awake().
+            // To workaround this, we force the newly spawned object active.
+            newOne.SetActive(true);
             foreach (var comp in newOne.GetComponentsInChildren<Emu_Trigger>(false))
             {
                 comp.ExecuteTriggers(VRCSDK2.VRC_Trigger.TriggerType.OnSpawn);
