@@ -23,7 +23,7 @@ namespace Iwsd
     }
     
     
-    class Emu_Trigger : MonoBehaviour
+    public class Emu_Trigger : MonoBehaviour
     {
         // [SerializeField] // TODO Make trigger definition visible with Unity inspector to debug scene.
         Val_Trigger vrcTrigger;
@@ -739,7 +739,7 @@ namespace Iwsd
             // true: includeInactive
             foreach (var comp in newOne.GetComponentsInChildren<VRCSDK2.VRC_Trigger>(true))
             {
-                comp.gameObject.AddComponent<Emu_Trigger>();
+                comp.gameObject.GetOrAddComponent<Emu_Trigger>();
             }
 
             foreach (var comp in newOne.GetComponentsInChildren<Emu_Trigger>(false))
