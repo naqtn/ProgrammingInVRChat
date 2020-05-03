@@ -494,7 +494,11 @@ namespace Iwsd
                 }
             }
 
+#if UNITY_2018_4_OR_NEWER
+            var vrcPipelineManager = Resources.FindObjectsOfTypeAll(typeof(VRC.Core.PipelineManager)) as VRC.Core.PipelineManager[];
+#else
             var vrcPipelineManager = Resources.FindObjectsOfTypeAll(typeof(VRC.Core.VRCPipelineManager)) as VRC.Core.VRCPipelineManager[];
+#endif
             foreach (var pm in vrcPipelineManager)
             {
                 // PrefabUtility.GetPrefabType returns None on Unity 2017.4.15f1, PrefabInstance on Unity 2017.4.28f1

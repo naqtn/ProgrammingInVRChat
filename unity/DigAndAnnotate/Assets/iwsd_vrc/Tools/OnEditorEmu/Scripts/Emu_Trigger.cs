@@ -18,7 +18,13 @@ namespace Iwsd
 
         internal Val_Trigger(VRCSDK2.VRC_Trigger vrcTrigger)
         {
+#if UNITY_2018_4_OR_NEWER
+            // SDK2: The original VRC_Trigger is no longer destroyed, just disabled.
+            // So we can reference without a DeepCopy!
+            this.Triggers = vrcTrigger.Triggers;
+#else
             this.Triggers = DeepCopyHelper.DeepCopy<List<VRCSDK2.VRC_Trigger.TriggerEvent>>(vrcTrigger.Triggers); 
+#endif
         }
     }
     

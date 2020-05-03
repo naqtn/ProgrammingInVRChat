@@ -116,8 +116,11 @@ public class IwsdSpikeWindow : EditorWindow
                 return;
             }
             // VRC_Serialization is in Dependencies/VRChat/VRCSDK2.dll
+#if UNITY_2018_4_OR_NEWER
+            object[] parameters = VRC.SDKBase.VRC_Serialization.ParameterDecoder(VRCSDK2.VRC_EditorTools.ReadBytesFromProperty(parameterBytes));
+#else
             object[] parameters = VRCSDK2.VRC_Serialization.ParameterDecoder(VRCSDK2.VRC_EditorTools.ReadBytesFromProperty(parameterBytes));
-            
+#endif
             if (parameters == null) {
                 lastErrorString = "parameters == null";
                 EditorGUILayout.LabelField(lastErrorString);

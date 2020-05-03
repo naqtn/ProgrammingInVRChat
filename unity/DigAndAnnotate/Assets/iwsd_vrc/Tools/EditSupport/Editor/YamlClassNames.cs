@@ -86,7 +86,7 @@ namespace Iwsd
         
 #pragma warning disable 618         // (CS0618 A class member was marked with the Obsolete attribute)
         static Type[] searchBase = {
-            typeof(GameObject), typeof(EditorWindow), typeof(ParticleRenderer),
+            typeof(GameObject), typeof(EditorWindow), typeof(ParticleSystemRenderer),
             typeof(Rigidbody), typeof(Rigidbody2D), typeof(AudioListener),
             typeof(Animator), typeof(TextMesh), typeof(WheelCollider), typeof(WindZone),
             typeof(Cloth), typeof(Tree), typeof(Canvas), typeof(ParticleSystem),
