@@ -116,7 +116,7 @@ namespace Iwsd
                 }
 
                 // Emu_Trigger find brother VRC_Trigger by itself
-                var emu_trigger = triggerComp.gameObject.AddComponent<Emu_Trigger>();
+                var emu_trigger = triggerComp.gameObject.GetOrAddComponent<Emu_Trigger>();
 
                 emu_trigger.debugString = triggerComp.gameObject.name;
             }
